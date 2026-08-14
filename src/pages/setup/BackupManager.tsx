@@ -18,6 +18,10 @@ export default function BackupManager() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!window.confirm('백업을 불러오면 현재 모든 데이터가 삭제되고 백업 파일의 데이터로 교체됩니다. 계속하시겠습니까?')) {
+      e.target.value = '';
+      return;
+    }
     const text = await file.text();
     try {
       await importData(JSON.parse(text));
