@@ -22,6 +22,7 @@ export default function CurriculumManager() {
         {items.map((item) => (
           <li key={item.id}>
             <input
+              key={`unit-${item.id}-${item.unit}`}
               defaultValue={item.unit}
               aria-label={`단원-${item.id}`}
               onBlur={(e) => {
@@ -30,6 +31,7 @@ export default function CurriculumManager() {
               }}
             />
             <input
+              key={`lesson-${item.id}-${item.lesson}`}
               defaultValue={item.lesson}
               aria-label={`차시-${item.id}`}
               onBlur={(e) => {

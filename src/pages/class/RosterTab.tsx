@@ -24,6 +24,7 @@ export default function RosterTab({ classId }: { classId: number }) {
             <tr key={s.id}>
               <td>
                 <input
+                  key={`number-${s.id}-${s.number}`}
                   defaultValue={s.number}
                   aria-label={`번호-${s.id}`}
                   onBlur={(e) => {
@@ -34,6 +35,7 @@ export default function RosterTab({ classId }: { classId: number }) {
               </td>
               <td>
                 <input
+                  key={`name-${s.id}-${s.name}`}
                   defaultValue={s.name}
                   aria-label={`이름-${s.id}`}
                   onBlur={(e) => {
