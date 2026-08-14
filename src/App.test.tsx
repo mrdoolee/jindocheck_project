@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import App from './App';
 
 describe('App', () => {
-  it('renders without crashing', () => {
+  it('redirects root to /setup', async () => {
     render(<App />);
-    expect(document.body).toBeInTheDocument();
+    expect(await screen.findByText('설정')).toBeInTheDocument();
   });
 });
