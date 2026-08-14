@@ -25,7 +25,7 @@ export default function Sidebar() {
   const classes = useLiveQuery(() => db.classes.orderBy('name').toArray(), []) ?? [];
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col gap-6 bg-slate-900 p-4 text-slate-100">
+    <aside className="flex h-full w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-slate-900 p-4 text-slate-100">
       <NavLink to="/" className="flex items-center gap-2 px-2 py-1">
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
           학

@@ -67,4 +67,41 @@ describe('RecordsTab', () => {
     expect(within(list).getByText(/지각/)).toBeInTheDocument();
     expect(within(list).queryByText(/수학 숙제 제출/)).not.toBeInTheDocument();
   });
+
+  it('edits an existing entry in place', async () => {
+    const studentId = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
+    await db.attendance.add({ classId: 1, studentId, date: '2026-08-14', status: '지각', note: '' });
+
+    const user = userEvent.setup();
+    render(<RecordsTab classId={1} />);
+
+    const list = screen.getByRole('list');
+    expect(await within(list).findByText(/지각/)).toBeInTheDocument();
+    await user.click(within(list).getByText('수정'));
+
+    await user.selectOptions(within(list).getByLabelText('출결 상태 수정'), '결석');
+    await user.click(within(list).getByText('저장'));
+
+    await waitFor(() => {
+      expect(within(list).getByText(/결석/)).toBeInTheDocument();
+      expect(within(list).queryByText(/지각/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('deletes an entry after confirmation', async () => {
+    const studentId = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
+    await db.attendance.add({ classId: 1, studentId, date: '2026-08-14', status: '지각', note: '' });
+
+    const user = userEvent.setup();
+    window.confirm = () => true;
+    render(<RecordsTab classId={1} />);
+
+    const list = screen.getByRole('list');
+    expect(await within(list).findByText(/지각/)).toBeInTheDocument();
+    await user.click(within(list).getByText('삭제'));
+
+    await waitFor(() => {
+      expect(within(list).getByText('기록이 없습니다.')).toBeInTheDocument();
+    });
+  });
 });

@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { db } from '../../db/db';
 import SeatingTab from './SeatingTab';
 
@@ -48,5 +49,61 @@ describe('SeatingTab', () => {
     expect(studentA?.seatCol).toBe(1);
     expect(studentB?.seatRow).toBe(0);
     expect(studentB?.seatCol).toBe(0);
+  });
+
+  it('imports seat placements from an uploaded backup file, matching by student number', async () => {
+    const student14Id = await db.students.add({ classId: 1, number: 14, name: '학생14', seatRow: null, seatCol: null });
+    const student2Id = await db.students.add({ classId: 1, number: 2, name: '학생2', seatRow: 3, seatCol: 3 });
+
+    const payload = {
+      version: '1.0',
+      assignments: { desk_0_0: 's14', desk_0_1: 's2' },
+      desks: [
+        { id: 'desk_0_0', row: 0, col: 0, disabled: false },
+        { id: 'desk_0_1', row: 0, col: 1, disabled: false },
+      ],
+    };
+    const file = new File([JSON.stringify(payload)], 'backup.json', { type: 'application/json' });
+    window.confirm = vi.fn(() => true);
+    window.alert = vi.fn();
+
+    render(<SeatingTab classId={1} />);
+    const user = userEvent.setup();
+    const input = screen.getByLabelText('배치도 파일 선택');
+    await user.upload(input, file);
+
+    await waitFor(async () => {
+      const student14 = await db.students.get(student14Id);
+      expect(student14?.seatRow).toBe(0);
+      expect(student14?.seatCol).toBe(0);
+    });
+    const student2 = await db.students.get(student2Id);
+    expect(student2?.seatRow).toBe(0);
+    expect(student2?.seatCol).toBe(1);
+    expect(window.confirm).toHaveBeenCalled();
+  });
+
+  it('reports unmatched student numbers instead of silently dropping them', async () => {
+    await db.students.add({ classId: 1, number: 1, name: '학생1', seatRow: null, seatCol: null });
+
+    const payload = {
+      version: '1.0',
+      assignments: { desk_0_0: 's99' },
+      desks: [{ id: 'desk_0_0', row: 0, col: 0, disabled: false }],
+    };
+    const file = new File([JSON.stringify(payload)], 'backup.json', { type: 'application/json' });
+    window.confirm = vi.fn(() => true);
+    const alertSpy = vi.fn();
+    window.alert = alertSpy;
+
+    render(<SeatingTab classId={1} />);
+    const user = userEvent.setup();
+    const input = screen.getByLabelText('배치도 파일 선택');
+    await user.upload(input, file);
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalled();
+    });
+    expect(alertSpy.mock.calls[0][0]).toContain('99');
   });
 });

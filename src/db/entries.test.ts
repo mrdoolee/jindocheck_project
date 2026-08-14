@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { db } from './db';
-import { addAttendance, addSticker, addNote, listEntries } from './entries';
+import {
+  addAttendance,
+  addSticker,
+  addNote,
+  listEntries,
+  deleteEntry,
+  updateAttendanceEntry,
+  updateNoteEntry,
+} from './entries';
 
 beforeEach(async () => {
   await db.attendance.clear();
@@ -49,5 +57,31 @@ describe('entries', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].studentId).toBe(100);
     expect(entries[0].kind).toBe('sticker');
+  });
+
+  it('deletes an attendance entry', async () => {
+    const id = await addAttendance(1, 100, '출석', '', '2026-08-10');
+    await deleteEntry('attendance', id);
+    expect(await listEntries(1)).toHaveLength(0);
+  });
+
+  it('deletes a note entry', async () => {
+    const id = await addNote(1, 100, '특이사항', '내용', '2026-08-10');
+    await deleteEntry('note', id);
+    expect(await listEntries(1)).toHaveLength(0);
+  });
+
+  it('updates an attendance entry', async () => {
+    const id = await addAttendance(1, 100, '출석', '', '2026-08-10');
+    await updateAttendanceEntry(id, { status: '지각', note: '늦잠', date: '2026-08-11' });
+    const [entry] = await listEntries(1);
+    expect(entry).toMatchObject({ label: '지각', detail: '늦잠', date: '2026-08-11' });
+  });
+
+  it('updates a note entry', async () => {
+    const id = await addNote(1, 100, '특이사항', '원래 내용', '2026-08-10');
+    await updateNoteEntry(id, { type: '과제제출', content: '수정된 내용', date: '2026-08-12' });
+    const [entry] = await listEntries(1);
+    expect(entry).toMatchObject({ label: '과제제출', detail: '수정된 내용', date: '2026-08-12' });
   });
 });

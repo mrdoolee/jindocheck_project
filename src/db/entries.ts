@@ -31,6 +31,26 @@ export async function addNote(
   return db.records.add({ classId, studentId, date, type, content });
 }
 
+export async function deleteEntry(kind: EntryKind, id: number): Promise<void> {
+  if (kind === 'attendance') await db.attendance.delete(id);
+  if (kind === 'sticker') await db.stickers.delete(id);
+  if (kind === 'note') await db.records.delete(id);
+}
+
+export async function updateAttendanceEntry(
+  id: number,
+  changes: Partial<{ status: AttendanceStatus; note: string; date: string }>
+): Promise<void> {
+  await db.attendance.update(id, changes);
+}
+
+export async function updateNoteEntry(
+  id: number,
+  changes: Partial<{ type: NoteType; content: string; date: string }>
+): Promise<void> {
+  await db.records.update(id, changes);
+}
+
 export interface EntryFilters {
   studentId?: number;
   kind?: EntryKind;
