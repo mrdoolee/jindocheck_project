@@ -2,6 +2,7 @@ import { NavLink, Route, Routes, Navigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import ClassSwitcher from './class/ClassSwitcher';
+import ProgressTab from './class/ProgressTab';
 
 function Placeholder({ label }: { label: string }) {
   return <div>{label}</div>;
@@ -27,7 +28,7 @@ export default function ClassPage() {
       </nav>
       <Routes>
         <Route path="/" element={<Navigate to="progress" replace />} />
-        <Route path="progress" element={<Placeholder label="진도 체크 탭" />} />
+        <Route path="progress" element={<ProgressTab classId={id} />} />
         <Route path="roster" element={<Placeholder label="명렬표 탭" />} />
         <Route path="seating" element={<Placeholder label="자리배치표 탭" />} />
         <Route path="records" element={<Placeholder label="기록 탭" />} />
