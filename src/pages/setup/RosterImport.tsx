@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { addStudent } from '../../db/students';
+import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 function parseRoster(text: string): { number: number; name: string }[] {
   return text
@@ -30,27 +35,40 @@ export default function RosterImport() {
   };
 
   return (
-    <section>
-      <h2>학생 명단 붙여넣기</h2>
-      <select
-        aria-label="대상 학급"
-        value={classId}
-        onChange={(e) => setClassId(e.target.value === '' ? '' : Number(e.target.value))}
-      >
-        <option value="">학급 선택</option>
-        {classes.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
-      <textarea
-        aria-label="명단 붙여넣기"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={'번호,이름\n1,홍길동\n2,김철수'}
-      />
-      <button onClick={handleImport}>명단 추가</button>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle>학생 명단 붙여넣기</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="roster-class">대상 학급</Label>
+          <Select
+            id="roster-class"
+            aria-label="대상 학급"
+            value={classId}
+            onChange={(e) => setClassId(e.target.value === '' ? '' : Number(e.target.value))}
+          >
+            <option value="">학급 선택</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="roster-text">명단 붙여넣기</Label>
+          <Textarea
+            id="roster-text"
+            aria-label="명단 붙여넣기"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={'번호,이름\n1,홍길동\n2,김철수'}
+            rows={4}
+          />
+        </div>
+        <Button onClick={handleImport}>명단 추가</Button>
+      </CardContent>
+    </Card>
   );
 }

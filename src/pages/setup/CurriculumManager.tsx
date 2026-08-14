@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { addCurriculumItem, updateCurriculumItem, deleteCurriculumItem } from '../../db/curriculum';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CurriculumManager() {
   const items = useLiveQuery(() => db.curriculum.orderBy('order').toArray(), []) ?? [];
@@ -16,36 +19,57 @@ export default function CurriculumManager() {
   };
 
   return (
-    <section>
-      <h2>공통 진도표</h2>
-      <ol>
-        {items.map((item) => (
-          <li key={item.id}>
-            <input
-              key={`unit-${item.id}-${item.unit}`}
-              defaultValue={item.unit}
-              aria-label={`단원-${item.id}`}
-              onBlur={(e) => {
-                const value = e.target.value.trim();
-                if (value) updateCurriculumItem(item.id!, { unit: value });
-              }}
-            />
-            <input
-              key={`lesson-${item.id}-${item.lesson}`}
-              defaultValue={item.lesson}
-              aria-label={`차시-${item.id}`}
-              onBlur={(e) => {
-                const value = e.target.value.trim();
-                if (value) updateCurriculumItem(item.id!, { lesson: value });
-              }}
-            />
-            <button onClick={() => deleteCurriculumItem(item.id!)}>삭제</button>
-          </li>
-        ))}
-      </ol>
-      <input aria-label="새 단원" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="단원" />
-      <input aria-label="새 차시" value={lesson} onChange={(e) => setLesson(e.target.value)} placeholder="차시" />
-      <button onClick={handleAdd}>진도 항목 추가</button>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle>공통 진도표</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <ol className="list-none divide-y divide-border rounded-md border border-border">
+          {items.map((item, index) => (
+            <li key={item.id} className="flex items-center gap-2 px-3 py-2">
+              <span className="w-6 shrink-0 text-sm text-muted-foreground">{index + 1}</span>
+              <Input
+                key={`unit-${item.id}-${item.unit}`}
+                defaultValue={item.unit}
+                aria-label={`단원-${item.id}`}
+                className="flex-1"
+                onBlur={(e) => {
+                  const value = e.target.value.trim();
+                  if (value) updateCurriculumItem(item.id!, { unit: value });
+                }}
+              />
+              <Input
+                key={`lesson-${item.id}-${item.lesson}`}
+                defaultValue={item.lesson}
+                aria-label={`차시-${item.id}`}
+                className="flex-1"
+                onBlur={(e) => {
+                  const value = e.target.value.trim();
+                  if (value) updateCurriculumItem(item.id!, { lesson: value });
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 text-destructive hover:bg-destructive/10"
+                onClick={() => deleteCurriculumItem(item.id!)}
+              >
+                삭제
+              </Button>
+            </li>
+          ))}
+          {items.length === 0 && (
+            <li className="px-3 py-4 text-sm text-muted-foreground">아직 등록된 진도 항목이 없습니다.</li>
+          )}
+        </ol>
+        <div className="flex gap-2">
+          <Input aria-label="새 단원" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="단원" className="flex-1" />
+          <Input aria-label="새 차시" value={lesson} onChange={(e) => setLesson(e.target.value)} placeholder="차시" className="flex-1" />
+          <Button onClick={handleAdd} className="shrink-0">
+            진도 항목 추가
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
