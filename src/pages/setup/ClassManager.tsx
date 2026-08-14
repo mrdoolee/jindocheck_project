@@ -24,7 +24,7 @@ export default function ClassManager() {
             <button
               onClick={() => {
                 const next = window.prompt('새 이름', c.name);
-                if (next) renameClass(c.id!, next);
+                if (next && next.trim()) renameClass(c.id!, next.trim());
               }}
             >
               이름 변경
