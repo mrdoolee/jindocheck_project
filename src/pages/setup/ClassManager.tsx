@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { db } from '../../db/db';
-import { createClass, renameClass, deleteClass } from '../../db/classes';
+import { createClass, renameClass, deleteClass, reorderClasses } from '../../db/classes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function ClassManager() {
-  const classes = useLiveQuery(() => db.classes.orderBy('name').toArray(), []) ?? [];
+  const classes = useLiveQuery(() => db.classes.orderBy('order').toArray(), []) ?? [];
   const [name, setName] = useState('');
 
   const handleAdd = async () => {
@@ -17,15 +17,39 @@ export default function ClassManager() {
     setName('');
   };
 
+  const handleDrop = (e: React.DragEvent, targetId: number) => {
+    const draggingId = Number(e.dataTransfer.getData('text/plain'));
+    if (!draggingId || draggingId === targetId) return;
+    const ids = classes.map((c) => c.id!);
+    const fromIndex = ids.indexOf(draggingId);
+    const toIndex = ids.indexOf(targetId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    ids.splice(fromIndex, 1);
+    ids.splice(toIndex, 0, draggingId);
+    reorderClasses(ids);
+  };
+
   return (
     <Card>
       <CardContent className="space-y-4 p-4">
         <ul className="divide-y divide-border rounded-md border border-border">
           {classes.map((c) => (
-            <li key={c.id} className="flex items-center justify-between gap-3 px-3 py-2">
-              <Link to={`/class/${c.id}`} className="font-medium text-primary hover:underline">
-                {c.name}
-              </Link>
+            <li
+              key={c.id}
+              draggable
+              onDragStart={(e) => e.dataTransfer.setData('text/plain', String(c.id))}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleDrop(e, c.id!)}
+              className="flex cursor-grab items-center justify-between gap-3 px-3 py-2 active:cursor-grabbing"
+            >
+              <div className="flex items-center gap-2">
+                <span aria-hidden className="text-muted-foreground">
+                  ⠿
+                </span>
+                <Link to={`/class/${c.id}`} className="font-medium text-primary hover:underline">
+                  {c.name}
+                </Link>
+              </div>
               <div className="flex shrink-0 gap-2">
                 <Button
                   variant="outline"
@@ -56,6 +80,7 @@ export default function ClassManager() {
             <li className="px-3 py-4 text-sm text-muted-foreground">아직 등록된 학급이 없습니다.</li>
           )}
         </ul>
+        <p className="text-xs text-muted-foreground">항목을 드래그하면 순서를 바꿀 수 있습니다. 왼쪽 메뉴의 학급 목록도 이 순서를 따릅니다.</p>
         <div className="flex gap-2">
           <Input
             aria-label="새 학급 이름"

@@ -4,7 +4,7 @@ import { db } from '../db/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function HomePage() {
-  const classes = useLiveQuery(() => db.classes.orderBy('name').toArray(), []) ?? [];
+  const classes = useLiveQuery(() => db.classes.orderBy('order').toArray(), []) ?? [];
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
@@ -31,7 +31,7 @@ export default function HomePage() {
                 <CardHeader>
                   <CardTitle className="text-lg">{c.name}</CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">진도·명렬표·자리배치·기록 보기</CardContent>
+                <CardContent className="text-sm text-muted-foreground">진도체크·출결확인·누가기록·자리배치표</CardContent>
               </Card>
             </Link>
           ))}

@@ -8,6 +8,8 @@ import {
   deleteEntry,
   updateAttendanceEntry,
   updateNoteEntry,
+  upsertAttendance,
+  getAttendanceForDate,
 } from './entries';
 
 beforeEach(async () => {
@@ -83,5 +85,29 @@ describe('entries', () => {
     await updateNoteEntry(id, { type: '과제제출', content: '수정된 내용', date: '2026-08-12' });
     const [entry] = await listEntries(1);
     expect(entry).toMatchObject({ label: '과제제출', detail: '수정된 내용', date: '2026-08-12' });
+  });
+
+  it('upsertAttendance creates a new record on first call', async () => {
+    await upsertAttendance(1, 100, '2026-08-10', '출석');
+    const map = await getAttendanceForDate(1, '2026-08-10');
+    expect(map.get(100)).toBe('출석');
+  });
+
+  it('upsertAttendance updates the existing record instead of duplicating it', async () => {
+    await upsertAttendance(1, 100, '2026-08-10', '출석');
+    await upsertAttendance(1, 100, '2026-08-10', '지각');
+
+    const all = await db.attendance.where({ classId: 1, studentId: 100, date: '2026-08-10' }).toArray();
+    expect(all).toHaveLength(1);
+    expect(all[0].status).toBe('지각');
+  });
+
+  it('getAttendanceForDate only returns records for the given date', async () => {
+    await upsertAttendance(1, 100, '2026-08-10', '출석');
+    await upsertAttendance(1, 100, '2026-08-11', '결석');
+
+    const map = await getAttendanceForDate(1, '2026-08-10');
+    expect(map.get(100)).toBe('출석');
+    expect(map.size).toBe(1);
   });
 });

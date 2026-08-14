@@ -29,6 +29,19 @@ export class AppDatabase extends Dexie {
       stickers: '++id, classId, studentId, date',
       records: '++id, classId, studentId, date',
     });
+
+    this.version(2)
+      .stores({
+        classes: '++id, name, order',
+      })
+      .upgrade(async (tx) => {
+        const classes = await tx.table('classes').orderBy('name').toArray();
+        await Promise.all(classes.map((c, index) => tx.table('classes').update(c.id, { order: index })));
+      });
+
+    this.version(3).stores({
+      attendance: '++id, classId, studentId, date, [classId+date], [classId+studentId+date]',
+    });
   }
 }
 

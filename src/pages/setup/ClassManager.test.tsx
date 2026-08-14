@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { db } from '../../db/db';
+import { createClass } from '../../db/classes';
 import ClassManager from './ClassManager';
 
 beforeEach(async () => {
@@ -51,5 +52,40 @@ describe('ClassManager', () => {
 
     // Verify the class name is still the original
     expect(screen.getByText('1학년 3반')).toBeInTheDocument();
+  });
+
+  it('reorders classes via drag and drop', async () => {
+    await createClass('A반');
+    await createClass('B반');
+
+    render(
+      <MemoryRouter>
+        <ClassManager />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('A반');
+    const items = screen.getAllByRole('listitem');
+    expect(items.map((li) => li.textContent)).toEqual([
+      expect.stringContaining('A반'),
+      expect.stringContaining('B반'),
+    ]);
+
+    const bClassId = await db.classes.where('name').equals('B반').first().then((c) => c!.id!);
+    const store = new Map<string, string>();
+    const dataTransfer = {
+      setData: (k: string, v: string) => store.set(k, v),
+      getData: (k: string) => store.get(k) ?? '',
+    };
+    store.set('text/plain', String(bClassId));
+
+    fireEvent.dragStart(items[1], { dataTransfer });
+    fireEvent.dragOver(items[0], { dataTransfer });
+    fireEvent.drop(items[0], { dataTransfer });
+
+    await waitFor(async () => {
+      const classes = await db.classes.orderBy('order').toArray();
+      expect(classes.map((c) => c.name)).toEqual(['B반', 'A반']);
+    });
   });
 });

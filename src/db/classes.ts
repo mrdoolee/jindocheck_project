@@ -2,15 +2,22 @@ import { db } from './db';
 import type { ClassRecord } from './types';
 
 export async function createClass(name: string): Promise<number> {
-  return db.classes.add({ name, createdAt: new Date().toISOString() });
+  const count = await db.classes.count();
+  return db.classes.add({ name, createdAt: new Date().toISOString(), order: count });
 }
 
 export async function listClasses(): Promise<ClassRecord[]> {
-  return db.classes.orderBy('name').toArray();
+  return db.classes.orderBy('order').toArray();
 }
 
 export async function renameClass(id: number, name: string): Promise<void> {
   await db.classes.update(id, { name });
+}
+
+export async function reorderClasses(orderedIds: number[]): Promise<void> {
+  await db.transaction('rw', db.classes, async () => {
+    await Promise.all(orderedIds.map((id, index) => db.classes.update(id, { order: index })));
+  });
 }
 
 export async function deleteClass(id: number): Promise<void> {

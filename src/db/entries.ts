@@ -31,6 +31,29 @@ export async function addNote(
   return db.records.add({ classId, studentId, date, type, content });
 }
 
+export async function upsertAttendance(
+  classId: number,
+  studentId: number,
+  date: string,
+  status: AttendanceStatus,
+  note = ''
+): Promise<void> {
+  const existing = await db.attendance.where({ classId, studentId, date }).first();
+  if (existing) {
+    await db.attendance.update(existing.id!, { status, note });
+  } else {
+    await db.attendance.add({ classId, studentId, date, status, note });
+  }
+}
+
+export async function getAttendanceForDate(
+  classId: number,
+  date: string
+): Promise<Map<number, AttendanceStatus>> {
+  const rows = await db.attendance.where({ classId, date }).toArray();
+  return new Map(rows.map((r) => [r.studentId, r.status]));
+}
+
 export async function deleteEntry(kind: EntryKind, id: number): Promise<void> {
   if (kind === 'attendance') await db.attendance.delete(id);
   if (kind === 'sticker') await db.stickers.delete(id);

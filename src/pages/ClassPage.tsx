@@ -3,15 +3,15 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { cn } from '@/lib/utils';
 import ProgressTab from './class/ProgressTab';
-import RosterTab from './class/RosterTab';
-import SeatingTab from './class/SeatingTab';
+import AttendanceTab from './class/AttendanceTab';
 import RecordsTab from './class/RecordsTab';
+import SeatingTab from './class/SeatingTab';
 
 const TABS = [
-  { to: 'progress', label: '진도 체크' },
-  { to: 'roster', label: '명렬표' },
+  { to: 'progress', label: '진도체크' },
+  { to: 'attendance', label: '출결확인' },
+  { to: 'records', label: '누가기록' },
   { to: 'seating', label: '자리배치표' },
-  { to: 'records', label: '기록' },
 ];
 
 export default function ClassPage() {
@@ -46,9 +46,9 @@ export default function ClassPage() {
       <Routes>
         <Route path="/" element={<Navigate to="progress" replace />} />
         <Route path="progress" element={<ProgressTab classId={id} />} />
-        <Route path="roster" element={<RosterTab classId={id} />} />
-        <Route path="seating" element={<SeatingTab classId={id} />} />
+        <Route path="attendance" element={<AttendanceTab classId={id} />} />
         <Route path="records" element={<RecordsTab classId={id} />} />
+        <Route path="seating" element={<SeatingTab classId={id} />} />
       </Routes>
     </div>
   );

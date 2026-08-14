@@ -21,7 +21,7 @@ describe('ClassPage', () => {
     );
 
     expect(await screen.findByText('1학년 3반')).toBeInTheDocument();
-    expect(screen.getByText('진도 체크')).toBeInTheDocument();
+    expect(screen.getByText('진도체크')).toBeInTheDocument();
   });
 
   it('redirects to /setup when the class does not exist', async () => {

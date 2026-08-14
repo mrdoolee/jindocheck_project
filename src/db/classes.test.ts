@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { db } from './db';
-import { createClass, listClasses, renameClass, deleteClass } from './classes';
+import { createClass, listClasses, renameClass, deleteClass, reorderClasses } from './classes';
 
 beforeEach(async () => {
   await db.classes.clear();
@@ -12,11 +12,22 @@ beforeEach(async () => {
 });
 
 describe('classes CRUD', () => {
-  it('creates and lists classes sorted by name', async () => {
+  it('creates and lists classes in insertion order', async () => {
     await createClass('2반');
     await createClass('1반');
     const classes = await listClasses();
-    expect(classes.map((c) => c.name)).toEqual(['1반', '2반']);
+    expect(classes.map((c) => c.name)).toEqual(['2반', '1반']);
+  });
+
+  it('reorders classes to a given id order', async () => {
+    const idA = await createClass('A');
+    const idB = await createClass('B');
+    const idC = await createClass('C');
+
+    await reorderClasses([idC, idA, idB]);
+
+    const classes = await listClasses();
+    expect(classes.map((c) => c.name)).toEqual(['C', 'A', 'B']);
   });
 
   it('renames a class', async () => {

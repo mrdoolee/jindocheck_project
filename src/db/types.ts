@@ -2,6 +2,7 @@ export interface ClassRecord {
   id?: number;
   name: string;
   createdAt: string;
+  order: number;
 }
 
 export interface StudentRecord {

@@ -22,7 +22,7 @@ async function handleExport() {
 }
 
 export default function Sidebar() {
-  const classes = useLiveQuery(() => db.classes.orderBy('name').toArray(), []) ?? [];
+  const classes = useLiveQuery(() => db.classes.orderBy('order').toArray(), []) ?? [];
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-slate-900 p-4 text-slate-100">
