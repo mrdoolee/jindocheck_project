@@ -73,4 +73,18 @@ describe('RosterTab', () => {
     expect(await db.students.count()).toBe(0);
     expect(screen.queryAllByLabelText(/^이름-/)).toHaveLength(0);
   });
+
+  it('does not update student name when blurring with whitespace-only text', async () => {
+    const id = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
+    const user = userEvent.setup();
+    render(<RosterTab classId={1} />);
+
+    const nameInput = await screen.findByLabelText(`이름-${id}`);
+    await user.clear(nameInput);
+    await user.type(nameInput, '   ');
+    await user.tab();
+
+    const student = await db.students.get(id);
+    expect(student?.name).toBe('홍길동');
+  });
 });

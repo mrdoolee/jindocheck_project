@@ -36,7 +36,10 @@ export default function RosterTab({ classId }: { classId: number }) {
                 <input
                   defaultValue={s.name}
                   aria-label={`이름-${s.id}`}
-                  onBlur={(e) => updateStudent(s.id!, { name: e.target.value })}
+                  onBlur={(e) => {
+                    const value = e.target.value.trim();
+                    if (value) updateStudent(s.id!, { name: value });
+                  }}
                 />
               </td>
               <td>
