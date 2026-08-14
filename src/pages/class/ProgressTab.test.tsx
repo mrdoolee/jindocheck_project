@@ -69,4 +69,25 @@ describe('ProgressTab', () => {
       expect(record.date).toBe('2026-01-15');
     });
   });
+
+  it('clearing the date input does not unmount it', async () => {
+    const curriculumId = await addCurriculumItem('1단원', '1차시');
+    const user = userEvent.setup();
+    render(<ProgressTab classId={1} />);
+
+    const checkbox = await screen.findByRole('checkbox');
+    await user.click(checkbox);
+
+    const dateInput = (await screen.findByLabelText(`날짜-${curriculumId}`)) as HTMLInputElement;
+    const originalValue = dateInput.value;
+
+    fireEvent.change(dateInput, { target: { value: '' } });
+
+    await waitFor(() => {
+      // Input should still be in the DOM
+      expect(screen.getByLabelText(`날짜-${curriculumId}`)).toBeInTheDocument();
+      // Value should not have changed to empty
+      expect((screen.getByLabelText(`날짜-${curriculumId}`) as HTMLInputElement).value).toBe(originalValue);
+    });
+  });
 });

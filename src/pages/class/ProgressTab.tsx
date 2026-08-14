@@ -29,7 +29,9 @@ export default function ProgressTab({ classId }: { classId: number }) {
                 type="date"
                 aria-label={`날짜-${item.id}`}
                 value={p.date}
-                onChange={(e) => setProgress(classId, item.id!, true, e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value) setProgress(classId, item.id!, true, e.target.value);
+                }}
               />
             )}
           </li>

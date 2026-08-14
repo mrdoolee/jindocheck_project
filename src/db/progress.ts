@@ -11,7 +11,7 @@ export async function setProgress(
     .where('[classId+curriculumItemId]')
     .equals([classId, curriculumItemId])
     .first();
-  const resolvedDate = done ? (date ?? new Date().toISOString().slice(0, 10)) : null;
+  const resolvedDate = done ? (date || new Date().toISOString().slice(0, 10)) : null;
   if (existing) {
     await db.progress.update(existing.id!, { done, date: resolvedDate });
   } else {

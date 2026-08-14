@@ -51,4 +51,10 @@ describe('progress', () => {
     const [record] = await listProgress(1);
     expect(record.date).toBe('2026-01-15');
   });
+
+  it('treats an empty string date the same as missing and uses today', async () => {
+    await setProgress(1, 10, true, '');
+    const [record] = await listProgress(1);
+    expect(record.date).toBe(new Date().toISOString().slice(0, 10));
+  });
 });
