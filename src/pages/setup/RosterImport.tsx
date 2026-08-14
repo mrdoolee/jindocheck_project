@@ -10,9 +10,10 @@ function parseRoster(text: string): { number: number; name: string }[] {
     .filter(Boolean)
     .map((line) => {
       const [num, name] = line.split(/[\t,]/).map((v) => v.trim());
-      return { number: Number(num), name };
+      return { number: Number(num), name, numStr: num };
     })
-    .filter((row) => !Number.isNaN(row.number) && !!row.name);
+    .filter((row) => row.numStr !== '' && !Number.isNaN(row.number) && !!row.name)
+    .map(({ numStr, ...row }) => row);
 }
 
 export default function RosterImport() {
