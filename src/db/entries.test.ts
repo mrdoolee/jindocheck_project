@@ -36,4 +36,18 @@ describe('entries', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].kind).toBe('sticker');
   });
+
+  it('filters by both studentId and kind (AND semantics)', async () => {
+    // Attendance for student 100 (matches studentId but not kind filter alone)
+    await addAttendance(1, 100, '출석', '', '2026-08-10');
+    // Sticker for student 100 (matches both filters - this should be returned)
+    await addSticker(1, 100, 2, '칭찬', '2026-08-11');
+    // Attendance for student 101 (matches kind but not studentId filter alone)
+    await addAttendance(1, 101, '결석', '병결', '2026-08-12');
+
+    const entries = await listEntries(1, { studentId: 100, kind: 'sticker' });
+    expect(entries).toHaveLength(1);
+    expect(entries[0].studentId).toBe(100);
+    expect(entries[0].kind).toBe('sticker');
+  });
 });
