@@ -30,7 +30,7 @@ describe('curriculum CRUD', () => {
   it('preserves insertion order after deleting non-tail items', async () => {
     const idA = await addCurriculumItem('1단원', '1차시');
     const idB = await addCurriculumItem('1단원', '2차시');
-    const idC = await addCurriculumItem('1단원', '3차시');
+    await addCurriculumItem('1단원', '3차시');
 
     await deleteCurriculumItem(idA);
     await deleteCurriculumItem(idB);
