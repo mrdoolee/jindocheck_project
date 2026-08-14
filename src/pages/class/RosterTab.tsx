@@ -25,7 +25,10 @@ export default function RosterTab({ classId }: { classId: number }) {
                 <input
                   defaultValue={s.number}
                   aria-label={`번호-${s.id}`}
-                  onBlur={(e) => updateStudent(s.id!, { number: Number(e.target.value) })}
+                  onBlur={(e) => {
+                    const value = Number(e.target.value);
+                    if (!Number.isNaN(value)) updateStudent(s.id!, { number: value });
+                  }}
                 />
               </td>
               <td>

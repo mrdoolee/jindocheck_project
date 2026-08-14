@@ -33,4 +33,32 @@ describe('RosterTab', () => {
     const student = await db.students.get(id);
     expect(student?.name).toBe('홍길순');
   });
+
+  it('edits a student number to a valid number on blur', async () => {
+    const id = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
+    const user = userEvent.setup();
+    render(<RosterTab classId={1} />);
+
+    const numberInput = await screen.findByLabelText(`번호-${id}`);
+    await user.clear(numberInput);
+    await user.type(numberInput, '5');
+    await user.tab();
+
+    const student = await db.students.get(id);
+    expect(student?.number).toBe(5);
+  });
+
+  it('does not update student number when blurring with non-numeric text', async () => {
+    const id = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
+    const user = userEvent.setup();
+    render(<RosterTab classId={1} />);
+
+    const numberInput = await screen.findByLabelText(`번호-${id}`);
+    await user.clear(numberInput);
+    await user.type(numberInput, 'abc');
+    await user.tab();
+
+    const student = await db.students.get(id);
+    expect(student?.number).toBe(1);
+  });
 });
