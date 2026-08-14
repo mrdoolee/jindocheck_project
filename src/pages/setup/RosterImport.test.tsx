@@ -16,7 +16,9 @@ describe('RosterImport', () => {
     const user = userEvent.setup();
     render(<RosterImport />);
 
-    await user.selectOptions(await screen.findByLabelText('대상 학급'), String(classId));
+    const select = screen.getByLabelText('대상 학급');
+    await screen.findByText('1반');
+    await user.selectOptions(select, String(classId));
     await user.type(screen.getByLabelText('명단 붙여넣기'), '1,홍길동\n2,김철수');
     await user.click(screen.getByText('명단 추가'));
 
