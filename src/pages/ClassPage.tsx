@@ -5,10 +5,7 @@ import ClassSwitcher from './class/ClassSwitcher';
 import ProgressTab from './class/ProgressTab';
 import RosterTab from './class/RosterTab';
 import SeatingTab from './class/SeatingTab';
-
-function Placeholder({ label }: { label: string }) {
-  return <div>{label}</div>;
-}
+import RecordsTab from './class/RecordsTab';
 
 export default function ClassPage() {
   const { classId } = useParams();
@@ -33,7 +30,7 @@ export default function ClassPage() {
         <Route path="progress" element={<ProgressTab classId={id} />} />
         <Route path="roster" element={<RosterTab classId={id} />} />
         <Route path="seating" element={<SeatingTab classId={id} />} />
-        <Route path="records" element={<Placeholder label="기록 탭" />} />
+        <Route path="records" element={<RecordsTab classId={id} />} />
       </Routes>
     </div>
   );
