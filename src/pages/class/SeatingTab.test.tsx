@@ -30,4 +30,23 @@ describe('SeatingTab', () => {
     expect(student?.seatRow).toBe(0);
     expect(student?.seatCol).toBe(0);
   });
+
+  it('swaps two students when one is dropped onto an occupied cell', async () => {
+    const studentAId = await db.students.add({ classId: 1, number: 1, name: '학생A', seatRow: 0, seatCol: 0 });
+    const studentBId = await db.students.add({ classId: 1, number: 2, name: '학생B', seatRow: 1, seatCol: 1 });
+    render(<SeatingTab classId={1} />);
+
+    expect(await screen.findByText('학생A')).toBeInTheDocument();
+    expect(await screen.findByText('학생B')).toBeInTheDocument();
+
+    const targetCell = screen.getByLabelText('좌석-1-1');
+    fireEvent.drop(targetCell, { dataTransfer: makeDataTransfer(studentAId) });
+
+    const studentA = await db.students.get(studentAId);
+    const studentB = await db.students.get(studentBId);
+    expect(studentA?.seatRow).toBe(1);
+    expect(studentA?.seatCol).toBe(1);
+    expect(studentB?.seatRow).toBe(0);
+    expect(studentB?.seatCol).toBe(0);
+  });
 });

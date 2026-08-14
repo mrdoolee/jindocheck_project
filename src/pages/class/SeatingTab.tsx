@@ -28,8 +28,14 @@ export default function SeatingTab({ classId }: { classId: number }) {
                 aria-label={`좌석-${row}-${col}`}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
-                  const studentId = Number(e.dataTransfer.getData('text/plain'));
-                  updateSeat(studentId, row, col);
+                  const draggedId = Number(e.dataTransfer.getData('text/plain'));
+                  const draggedStudent = students.find((s) => s.id === draggedId);
+                  if (!draggedStudent) return;
+                  const occupant = seated.get(key);
+                  if (occupant && occupant.id !== draggedId) {
+                    updateSeat(occupant.id!, draggedStudent.seatRow, draggedStudent.seatCol);
+                  }
+                  updateSeat(draggedId, row, col);
                 }}
                 style={{ border: '1px solid #ccc', height: 40 }}
               >
