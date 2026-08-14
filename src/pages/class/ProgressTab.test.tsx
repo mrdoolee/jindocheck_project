@@ -41,29 +41,15 @@ describe('ProgressTab', () => {
     expect(checkbox).not.toBeChecked();
   });
 
-  it('displays date from p.date database field, not recalculated', async () => {
-    // Regression test: ensures component reads p.date from database, not recalculating today
-    // The original bug was computing new Date().toISOString().slice(0, 10) for every checked item
-    // This test verifies we fixed it by reading the actual persisted p.date value
+  it('displays the actual persisted date, not today\'s date', async () => {
+    const curriculumId = await addCurriculumItem('1단원', '1차시');
+    await db.progress.add({ classId: 1, curriculumItemId: curriculumId, done: true, date: '2026-01-15' });
 
-    await addCurriculumItem('2단원', '2차시');
-    const user = userEvent.setup();
     render(<ProgressTab classId={1} />);
 
-    const checkbox = await screen.findByRole('checkbox');
-    const expectedDate = new Date().toISOString().slice(0, 10);
-
-    // Mark item as done via setProgress (which stores the date in DB)
-    await user.click(checkbox);
-
-    // Verify the date is displayed (comes from p.date in database)
-    await waitFor(() => {
-      expect(checkbox).toBeChecked();
-    });
-    expect(await screen.findByText(new RegExp(expectedDate))).toBeInTheDocument();
-
-    // This test passing proves the component reads p.date from the database record.
-    // If regression occurs and code reverts to recalculating dates, and if p.date
-    // ever differs from today (e.g., from manual DB updates), the display would be wrong.
+    expect(await screen.findByText(/2026-01-15/)).toBeInTheDocument();
+    // also assert today's date is NOT what's shown, to be extra sure:
+    const today = new Date().toISOString().slice(0, 10);
+    expect(screen.queryByText(new RegExp(today))).not.toBeInTheDocument();
   });
 });
