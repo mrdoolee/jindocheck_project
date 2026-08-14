@@ -2,8 +2,9 @@ import { db } from './db';
 import type { CurriculumItem } from './types';
 
 export async function addCurriculumItem(unit: string, lesson: string): Promise<number> {
-  const count = await db.curriculum.count();
-  return db.curriculum.add({ order: count, unit, lesson });
+  const last = await db.curriculum.orderBy('order').last();
+  const order = last ? last.order + 1 : 0;
+  return db.curriculum.add({ order, unit, lesson });
 }
 
 export async function listCurriculum(): Promise<CurriculumItem[]> {

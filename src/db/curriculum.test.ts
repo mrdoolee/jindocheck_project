@@ -26,4 +26,18 @@ describe('curriculum CRUD', () => {
     await deleteCurriculumItem(id);
     expect(await listCurriculum()).toHaveLength(0);
   });
+
+  it('preserves insertion order after deleting non-tail items', async () => {
+    const idA = await addCurriculumItem('1단원', '1차시');
+    const idB = await addCurriculumItem('1단원', '2차시');
+    const idC = await addCurriculumItem('1단원', '3차시');
+
+    await deleteCurriculumItem(idA);
+    await deleteCurriculumItem(idB);
+
+    await addCurriculumItem('1단원', '4차시');
+    const items = await listCurriculum();
+
+    expect(items.map((i) => i.lesson)).toEqual(['3차시', '4차시']);
+  });
 });
