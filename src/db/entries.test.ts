@@ -1,0 +1,39 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { db } from './db';
+import { addAttendance, addSticker, addNote, listEntries } from './entries';
+
+beforeEach(async () => {
+  await db.attendance.clear();
+  await db.stickers.clear();
+  await db.records.clear();
+});
+
+describe('entries', () => {
+  it('merges attendance, stickers, notes sorted by date desc', async () => {
+    await addAttendance(1, 100, '출석', '', '2026-08-10');
+    await addSticker(1, 100, 3, '적극적인 발표', '2026-08-12');
+    await addNote(1, 101, '과제제출', '수학 숙제 제출', '2026-08-11');
+
+    const entries = await listEntries(1);
+    expect(entries.map((e) => e.date)).toEqual(['2026-08-12', '2026-08-11', '2026-08-10']);
+    expect(entries[0]).toMatchObject({ kind: 'sticker', label: '+3점', detail: '적극적인 발표' });
+    expect(entries[1]).toMatchObject({ kind: 'note', label: '과제제출', detail: '수학 숙제 제출' });
+    expect(entries[2]).toMatchObject({ kind: 'attendance', label: '출석' });
+  });
+
+  it('filters by studentId', async () => {
+    await addAttendance(1, 100, '출석', '', '2026-08-10');
+    await addAttendance(1, 101, '결석', '병결', '2026-08-10');
+    const entries = await listEntries(1, { studentId: 101 });
+    expect(entries).toHaveLength(1);
+    expect(entries[0].studentId).toBe(101);
+  });
+
+  it('filters by kind', async () => {
+    await addAttendance(1, 100, '출석', '', '2026-08-10');
+    await addSticker(1, 100, 1, '칭찬', '2026-08-10');
+    const entries = await listEntries(1, { kind: 'sticker' });
+    expect(entries).toHaveLength(1);
+    expect(entries[0].kind).toBe('sticker');
+  });
+});
