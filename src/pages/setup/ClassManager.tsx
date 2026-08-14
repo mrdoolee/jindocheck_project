@@ -5,7 +5,7 @@ import { db } from '../../db/db';
 import { createClass, renameClass, deleteClass } from '../../db/classes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function ClassManager() {
   const classes = useLiveQuery(() => db.classes.orderBy('name').toArray(), []) ?? [];
@@ -19,10 +19,7 @@ export default function ClassManager() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>학급</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-4">
         <ul className="divide-y divide-border rounded-md border border-border">
           {classes.map((c) => (
             <li key={c.id} className="flex items-center justify-between gap-3 px-3 py-2">

@@ -22,7 +22,7 @@ describe('RecordsTab', () => {
     });
     await user.selectOptions(screen.getByLabelText('학생'), String(studentId));
     await user.selectOptions(screen.getByLabelText('출결 상태'), '지각');
-    await user.click(screen.getByText('저장'));
+    await user.click(screen.getByText('기록 저장'));
 
     expect(await screen.findByText(/지각/)).toBeInTheDocument();
   });
@@ -39,7 +39,7 @@ describe('RecordsTab', () => {
     await user.selectOptions(screen.getByLabelText('학생'), String(studentId));
     await user.selectOptions(screen.getByLabelText('기록 세부유형'), '과제제출');
     await user.type(screen.getByLabelText('내용'), '수학 숙제 제출');
-    await user.click(screen.getByText('저장'));
+    await user.click(screen.getByText('기록 저장'));
 
     expect(await screen.findByText(/수학 숙제 제출/)).toBeInTheDocument();
   });

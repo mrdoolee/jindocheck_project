@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import { db } from '../../db/db';
 import { addCurriculumItem } from '../../db/curriculum';
@@ -10,11 +11,19 @@ beforeEach(async () => {
   await db.progress.clear();
 });
 
+function renderProgressTab(classId: number) {
+  return render(
+    <MemoryRouter>
+      <ProgressTab classId={classId} />
+    </MemoryRouter>
+  );
+}
+
 describe('ProgressTab', () => {
   it('checks an item and shows today date', async () => {
-    await addCurriculumItem('1단원', '1차시');
+    const curriculumId = await addCurriculumItem('1단원', '1차시');
     const user = userEvent.setup();
-    render(<ProgressTab classId={1} />);
+    renderProgressTab(1);
 
     const checkbox = await screen.findByRole('checkbox');
     await user.click(checkbox);
@@ -23,20 +32,25 @@ describe('ProgressTab', () => {
       expect(checkbox).toBeChecked();
     });
     const today = new Date().toISOString().slice(0, 10);
-    expect(await screen.findByDisplayValue(today)).toBeInTheDocument();
+    const dateInput = await screen.findByLabelText(`날짜-${curriculumId}`);
+    expect(dateInput).toHaveValue(today);
   });
 
   it('keeps progress independent between classes', async () => {
     await addCurriculumItem('1단원', '1차시');
     const user = userEvent.setup();
-    const { rerender } = render(<ProgressTab classId={1} />);
+    const { rerender } = renderProgressTab(1);
     await user.click(await screen.findByRole('checkbox'));
 
     await waitFor(() => {
       expect(screen.getByRole('checkbox')).toBeChecked();
     });
 
-    rerender(<ProgressTab classId={2} />);
+    rerender(
+      <MemoryRouter>
+        <ProgressTab classId={2} />
+      </MemoryRouter>
+    );
     const checkbox = await screen.findByRole('checkbox');
     expect(checkbox).not.toBeChecked();
   });
@@ -45,18 +59,19 @@ describe('ProgressTab', () => {
     const curriculumId = await addCurriculumItem('1단원', '1차시');
     await db.progress.add({ classId: 1, curriculumItemId: curriculumId, done: true, date: '2026-01-15' });
 
-    render(<ProgressTab classId={1} />);
+    renderProgressTab(1);
 
-    expect(await screen.findByDisplayValue('2026-01-15')).toBeInTheDocument();
+    const dateInput = await screen.findByLabelText(`날짜-${curriculumId}`);
+    expect(dateInput).toHaveValue('2026-01-15');
     // also assert today's date is NOT what's shown, to be extra sure:
     const today = new Date().toISOString().slice(0, 10);
-    expect(screen.queryByDisplayValue(today)).not.toBeInTheDocument();
+    expect(dateInput).not.toHaveValue(today);
   });
 
   it('allows editing the date to a past date after checking an item', async () => {
     const curriculumId = await addCurriculumItem('1단원', '1차시');
     const user = userEvent.setup();
-    render(<ProgressTab classId={1} />);
+    renderProgressTab(1);
 
     const checkbox = await screen.findByRole('checkbox');
     await user.click(checkbox);
@@ -73,7 +88,7 @@ describe('ProgressTab', () => {
   it('clearing the date input does not unmount it', async () => {
     const curriculumId = await addCurriculumItem('1단원', '1차시');
     const user = userEvent.setup();
-    render(<ProgressTab classId={1} />);
+    renderProgressTab(1);
 
     const checkbox = await screen.findByRole('checkbox');
     await user.click(checkbox);

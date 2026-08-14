@@ -2,7 +2,9 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { setProgress } from '../../db/progress';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import QuickRecordForm from './QuickRecordForm';
 
 export default function ProgressTab({ classId }: { classId: number }) {
   const curriculum = useLiveQuery(() => db.curriculum.orderBy('order').toArray(), []);
@@ -11,47 +13,75 @@ export default function ProgressTab({ classId }: { classId: number }) {
   if (!curriculum || !progress) return null;
 
   const progressByItem = new Map(progress.map((p) => [p.curriculumItemId, p]));
+  const doneCount = curriculum.filter((item) => progressByItem.get(item.id!)?.done).length;
+  const total = curriculum.length;
+  const percent = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
   return (
-    <Card>
-      <CardContent className="p-0">
-        <ul className="divide-y divide-border">
-          {curriculum.map((item) => {
-            const p = progressByItem.get(item.id!);
-            return (
-              <li key={item.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                <label className="flex flex-1 items-center gap-3 text-sm">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <Card className="lg:col-span-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base">진도 현황</CardTitle>
+          <span className="text-xs font-medium text-muted-foreground">
+            {doneCount}/{total} 완료 ({percent}%)
+          </span>
+        </CardHeader>
+        <CardContent className="p-0">
+          <ul className="divide-y divide-border">
+            {curriculum.map((item) => {
+              const p = progressByItem.get(item.id!);
+              return (
+                <li key={item.id} className="flex items-center gap-3 px-4 py-3">
                   <input
                     type="checkbox"
                     checked={p?.done ?? false}
                     onChange={(e) => setProgress(classId, item.id!, e.target.checked)}
                     className="h-4 w-4 shrink-0 rounded border-input accent-primary"
                   />
-                  <span className={p?.done ? 'text-muted-foreground line-through' : ''}>
-                    {item.unit} - {item.lesson}
-                  </span>
-                </label>
-                {p?.done && p.date && (
-                  <Input
-                    type="date"
-                    aria-label={`날짜-${item.id}`}
-                    value={p.date}
-                    onChange={(e) => {
-                      if (e.target.value) setProgress(classId, item.id!, true, e.target.value);
-                    }}
-                    className="w-auto"
-                  />
-                )}
+                  <div className="min-w-0 flex-1">
+                    <p className={p?.done ? 'text-sm font-medium text-muted-foreground line-through' : 'text-sm font-medium'}>
+                      {item.unit}
+                    </p>
+                    {p?.done && p.date && (
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground">완료일</span>
+                        <Input
+                          type="date"
+                          aria-label={`날짜-${item.id}`}
+                          value={p.date}
+                          onChange={(e) => {
+                            if (e.target.value) setProgress(classId, item.id!, true, e.target.value);
+                          }}
+                          className="h-6 w-auto border-none bg-transparent p-0 text-xs text-muted-foreground shadow-none focus-visible:ring-0"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <Badge variant="secondary" className="shrink-0">
+                    {item.lesson}
+                  </Badge>
+                </li>
+              );
+            })}
+            {curriculum.length === 0 && (
+              <li className="px-4 py-6 text-sm text-muted-foreground">
+                아직 등록된 진도 항목이 없습니다. 설정 &gt; 진도표 관리에서 먼저 입력하세요.
               </li>
-            );
-          })}
-          {curriculum.length === 0 && (
-            <li className="px-4 py-6 text-sm text-muted-foreground">
-              아직 등록된 진도 항목이 없습니다. 설정 페이지에서 공통 진도표를 먼저 입력하세요.
-            </li>
-          )}
-        </ul>
-      </CardContent>
-    </Card>
+            )}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <div className="lg:col-span-1">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">빠른 기록</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <QuickRecordForm classId={classId} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

@@ -2,7 +2,6 @@ import { NavLink, Route, Routes, Navigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { cn } from '@/lib/utils';
-import ClassSwitcher from './class/ClassSwitcher';
 import ProgressTab from './class/ProgressTab';
 import RosterTab from './class/RosterTab';
 import SeatingTab from './class/SeatingTab';
@@ -24,11 +23,8 @@ export default function ClassPage() {
   if (klass === null) return <Navigate to="/setup" replace />;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">{klass.name}</h1>
-        <ClassSwitcher currentClassId={id} />
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6 p-6">
+      <h1 className="text-2xl font-bold tracking-tight">{klass.name}</h1>
       <nav className="flex gap-1 border-b border-border">
         {TABS.map((tab) => (
           <NavLink

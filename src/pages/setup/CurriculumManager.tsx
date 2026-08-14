@@ -4,7 +4,7 @@ import { db } from '../../db/db';
 import { addCurriculumItem, updateCurriculumItem, deleteCurriculumItem } from '../../db/curriculum';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function CurriculumManager() {
   const items = useLiveQuery(() => db.curriculum.orderBy('order').toArray(), []) ?? [];
@@ -20,10 +20,7 @@ export default function CurriculumManager() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>공통 진도표</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-4">
         <ol className="list-none divide-y divide-border rounded-md border border-border">
           {items.map((item, index) => (
             <li key={item.id} className="flex items-center gap-2 px-3 py-2">

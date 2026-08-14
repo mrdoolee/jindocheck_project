@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { exportData, importData } from '../../db/backup';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function BackupManager() {
   const fileInput = useRef<HTMLInputElement>(null);
@@ -36,11 +36,7 @@ export default function BackupManager() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>백업</CardTitle>
-        <CardDescription>중앙 서버가 없으므로, 이 브라우저의 데이터를 지킬 유일한 수단입니다. 주기적으로 내보내기 해두세요.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-wrap items-center gap-2">
+      <CardContent className="flex flex-wrap items-center gap-2 p-4">
         <Button onClick={handleExport}>내보내기</Button>
         <Button asChild variant="outline">
           <label className="cursor-pointer">

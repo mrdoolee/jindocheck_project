@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 function parseRoster(text: string): { number: number; name: string }[] {
   return text
@@ -36,10 +36,7 @@ export default function RosterImport() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>학생 명단 붙여넣기</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 p-4">
         <div className="space-y-1.5">
           <Label htmlFor="roster-class">대상 학급</Label>
           <Select
