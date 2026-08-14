@@ -37,4 +37,18 @@ describe('progress', () => {
     expect((await listProgress(1))[0].done).toBe(true);
     expect((await listProgress(2))[0].done).toBe(false);
   });
+
+  it('stamps an explicit date when provided instead of today', async () => {
+    await setProgress(1, 10, true, '2026-01-15');
+    const [record] = await listProgress(1);
+    expect(record.done).toBe(true);
+    expect(record.date).toBe('2026-01-15');
+  });
+
+  it('allows overriding the date of an already-done item', async () => {
+    await setProgress(1, 10, true);
+    await setProgress(1, 10, true, '2026-01-15');
+    const [record] = await listProgress(1);
+    expect(record.date).toBe('2026-01-15');
+  });
 });

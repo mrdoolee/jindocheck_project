@@ -23,8 +23,15 @@ export default function ProgressTab({ classId }: { classId: number }) {
                 onChange={(e) => setProgress(classId, item.id!, e.target.checked)}
               />
               {item.unit} - {item.lesson}
-              {p?.done && p.date && <span> ({p.date})</span>}
             </label>
+            {p?.done && p.date && (
+              <input
+                type="date"
+                aria-label={`날짜-${item.id}`}
+                value={p.date}
+                onChange={(e) => setProgress(classId, item.id!, true, e.target.value)}
+              />
+            )}
           </li>
         );
       })}

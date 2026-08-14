@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { db } from '../../db/db';
 import { addCurriculumItem } from '../../db/curriculum';
@@ -23,7 +23,7 @@ describe('ProgressTab', () => {
       expect(checkbox).toBeChecked();
     });
     const today = new Date().toISOString().slice(0, 10);
-    expect(await screen.findByText(new RegExp(today))).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(today)).toBeInTheDocument();
   });
 
   it('keeps progress independent between classes', async () => {
@@ -47,9 +47,26 @@ describe('ProgressTab', () => {
 
     render(<ProgressTab classId={1} />);
 
-    expect(await screen.findByText(/2026-01-15/)).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('2026-01-15')).toBeInTheDocument();
     // also assert today's date is NOT what's shown, to be extra sure:
     const today = new Date().toISOString().slice(0, 10);
-    expect(screen.queryByText(new RegExp(today))).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue(today)).not.toBeInTheDocument();
+  });
+
+  it('allows editing the date to a past date after checking an item', async () => {
+    const curriculumId = await addCurriculumItem('1단원', '1차시');
+    const user = userEvent.setup();
+    render(<ProgressTab classId={1} />);
+
+    const checkbox = await screen.findByRole('checkbox');
+    await user.click(checkbox);
+
+    const dateInput = await screen.findByLabelText(`날짜-${curriculumId}`);
+    fireEvent.change(dateInput, { target: { value: '2026-01-15' } });
+
+    await waitFor(async () => {
+      const [record] = await db.progress.where('classId').equals(1).toArray();
+      expect(record.date).toBe('2026-01-15');
+    });
   });
 });
