@@ -24,12 +24,18 @@ export default function CurriculumManager() {
             <input
               defaultValue={item.unit}
               aria-label={`단원-${item.id}`}
-              onBlur={(e) => updateCurriculumItem(item.id!, { unit: e.target.value })}
+              onBlur={(e) => {
+                const value = e.target.value.trim();
+                if (value) updateCurriculumItem(item.id!, { unit: value });
+              }}
             />
             <input
               defaultValue={item.lesson}
               aria-label={`차시-${item.id}`}
-              onBlur={(e) => updateCurriculumItem(item.id!, { lesson: e.target.value })}
+              onBlur={(e) => {
+                const value = e.target.value.trim();
+                if (value) updateCurriculumItem(item.id!, { lesson: value });
+              }}
             />
             <button onClick={() => deleteCurriculumItem(item.id!)}>삭제</button>
           </li>
