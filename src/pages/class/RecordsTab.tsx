@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { addAttendance, addSticker, addNote, listEntries } from '../../db/entries';
-import type { AttendanceStatus, NoteType } from '../../db/types';
+import type { AttendanceStatus, NoteType, EntryKind } from '../../db/types';
 
 type Kind = 'attendance' | 'sticker' | 'note';
 
@@ -19,10 +19,14 @@ export default function RecordsTab({ classId }: { classId: number }) {
   const [noteType, setNoteType] = useState<NoteType>('특이사항');
   const [content, setContent] = useState('');
   const [filterStudent, setFilterStudent] = useState<number | ''>('');
+  const [filterKind, setFilterKind] = useState<EntryKind | ''>('');
 
   const filters = useMemo(
-    () => ({ studentId: filterStudent === '' ? undefined : filterStudent }),
-    [filterStudent]
+    () => ({
+      studentId: filterStudent === '' ? undefined : filterStudent,
+      kind: filterKind === '' ? undefined : filterKind,
+    }),
+    [filterStudent, filterKind]
   );
   const entries = useLiveQuery(() => listEntries(classId, filters), [classId, filters]) ?? [];
 
@@ -94,6 +98,16 @@ export default function RecordsTab({ classId }: { classId: number }) {
               {s.number}. {s.name}
             </option>
           ))}
+        </select>
+        <select
+          aria-label="유형 필터"
+          value={filterKind}
+          onChange={(e) => setFilterKind(e.target.value as EntryKind | '')}
+        >
+          <option value="">전체 유형</option>
+          <option value="attendance">출결</option>
+          <option value="sticker">칭찬포인트</option>
+          <option value="note">특이사항/과제제출</option>
         </select>
       </div>
 

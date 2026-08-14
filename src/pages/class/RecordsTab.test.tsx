@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { db } from '../../db/db';
 import RecordsTab from './RecordsTab';
@@ -42,5 +42,29 @@ describe('RecordsTab', () => {
     await user.click(screen.getByText('저장'));
 
     expect(await screen.findByText(/수학 숙제 제출/)).toBeInTheDocument();
+  });
+
+  it('filters entries by kind', async () => {
+    const studentId = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
+    await db.attendance.add({ classId: 1, studentId, date: '2026-08-14', status: '지각', note: '' });
+    await db.records.add({ classId: 1, studentId, date: '2026-08-14', type: '과제제출', content: '수학 숙제 제출' });
+
+    render(<RecordsTab classId={1} />);
+
+    const list = screen.getByRole('list');
+    await waitFor(() => {
+      expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    });
+    expect(within(list).getByText(/지각/)).toBeInTheDocument();
+    expect(within(list).getByText(/수학 숙제 제출/)).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.selectOptions(screen.getByLabelText('유형 필터'), 'attendance');
+
+    await waitFor(() => {
+      expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+    });
+    expect(within(list).getByText(/지각/)).toBeInTheDocument();
+    expect(within(list).queryByText(/수학 숙제 제출/)).not.toBeInTheDocument();
   });
 });
