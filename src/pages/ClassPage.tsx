@@ -4,6 +4,7 @@ import { db } from '../db/db';
 import ClassSwitcher from './class/ClassSwitcher';
 import ProgressTab from './class/ProgressTab';
 import RosterTab from './class/RosterTab';
+import SeatingTab from './class/SeatingTab';
 
 function Placeholder({ label }: { label: string }) {
   return <div>{label}</div>;
@@ -31,7 +32,7 @@ export default function ClassPage() {
         <Route path="/" element={<Navigate to="progress" replace />} />
         <Route path="progress" element={<ProgressTab classId={id} />} />
         <Route path="roster" element={<RosterTab classId={id} />} />
-        <Route path="seating" element={<Placeholder label="자리배치표 탭" />} />
+        <Route path="seating" element={<SeatingTab classId={id} />} />
         <Route path="records" element={<Placeholder label="기록 탭" />} />
       </Routes>
     </div>
