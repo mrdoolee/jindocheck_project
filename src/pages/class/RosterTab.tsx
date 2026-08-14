@@ -9,8 +9,9 @@ export default function RosterTab({ classId }: { classId: number }) {
   const [name, setName] = useState('');
 
   const handleAdd = async () => {
-    if (!number || !name) return;
-    await addStudent(classId, Number(number), name);
+    const n = Number(number);
+    if (!number.trim() || !Number.isFinite(n) || !name.trim()) return;
+    await addStudent(classId, n, name.trim());
     setNumber('');
     setName('');
   };

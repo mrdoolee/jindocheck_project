@@ -61,4 +61,16 @@ describe('RosterTab', () => {
     const student = await db.students.get(id);
     expect(student?.number).toBe(1);
   });
+
+  it('does not add a student when the number field is non-numeric', async () => {
+    const user = userEvent.setup();
+    render(<RosterTab classId={1} />);
+
+    await user.type(screen.getByPlaceholderText('번호'), 'abc');
+    await user.type(screen.getByPlaceholderText('이름'), '홍길동');
+    await user.click(screen.getByText('학생 추가'));
+
+    expect(await db.students.count()).toBe(0);
+    expect(screen.queryAllByLabelText(/^이름-/)).toHaveLength(0);
+  });
 });
