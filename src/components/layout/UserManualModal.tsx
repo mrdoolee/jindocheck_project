@@ -69,8 +69,16 @@ export default function UserManualModal({ open, onClose }: { open: boolean; onCl
           <section>
             <h3 className="mb-1 font-semibold">더 자세한 내용</h3>
             <p>
-              스프레드시트의 각 탭·열이 앱의 어떤 데이터에 대응하는지 등 더 상세한 내용은 저장소의{' '}
-              <code>docs/user-manual.md</code> 문서를 참고하세요.
+              스프레드시트의 각 탭·열이 앱의 어떤 데이터에 대응하는지 등 더 상세한 내용은{' '}
+              <a
+                href="https://github.com/mrdoolee/jindocheck_project/blob/master/docs/user-manual.md"
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline hover:no-underline"
+              >
+                docs/user-manual.md
+              </a>{' '}
+              문서를 참고하세요.
             </p>
           </section>
         </div>
