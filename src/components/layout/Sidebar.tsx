@@ -3,6 +3,38 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/db/db';
 import { exportData } from '@/db/backup';
 import { cn } from '@/lib/utils';
+import { useSheetsSync } from '@/hooks/useSheetsSync';
+
+function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return '방금 전';
+  if (minutes < 60) return `${minutes}분 전`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}시간 전`;
+}
+
+function SyncStatusBadge() {
+  const { enabled, status, lastSyncedAt, syncNow } = useSheetsSync();
+  if (!enabled) return null;
+
+  if (status === 'error') {
+    return (
+      <button
+        onClick={syncNow}
+        className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-amber-400 transition-colors hover:bg-slate-800"
+      >
+        ⚠️ 동기화 실패 · 다시 시도
+      </button>
+    );
+  }
+
+  return (
+    <p className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400">
+      {status === 'syncing' ? '🔄 동기화 중...' : lastSyncedAt ? `🔄 동기화됨 · ${formatRelativeTime(lastSyncedAt)}` : '🔄 동기화 대기 중'}
+    </p>
+  );
+}
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
   cn(
@@ -58,6 +90,7 @@ export default function Sidebar() {
         >
           ⬆️ 데이터 내보내기
         </button>
+        <SyncStatusBadge />
       </div>
     </aside>
   );

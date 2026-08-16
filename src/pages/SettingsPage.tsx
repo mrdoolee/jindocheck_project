@@ -4,12 +4,14 @@ import ClassesPage from './setup/ClassesPage';
 import CurriculumPage from './setup/CurriculumPage';
 import RosterPage from './setup/RosterPage';
 import BackupPage from './setup/BackupPage';
+import SheetsSyncPage from './setup/SheetsSyncPage';
 
 const TABS = [
   { to: 'classes', label: '반 관리' },
   { to: 'curriculum', label: '진도표 관리' },
-  { to: 'roster', label: '명단 붙여넣기' },
+  { to: 'roster', label: '명단 관리' },
   { to: 'backup', label: '백업' },
+  { to: 'sheets', label: 'Google 시트' },
 ];
 
 export default function SettingsPage() {
@@ -43,6 +45,7 @@ export default function SettingsPage() {
         <Route path="curriculum" element={<CurriculumPage />} />
         <Route path="roster" element={<RosterPage />} />
         <Route path="backup" element={<BackupPage />} />
+        <Route path="sheets" element={<SheetsSyncPage />} />
       </Routes>
     </div>
   );

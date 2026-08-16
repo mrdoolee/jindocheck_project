@@ -8,6 +8,7 @@ import type {
   StickerRecord,
   NoteRecord,
 } from './types';
+import { notifyDirty } from './dirtyBus';
 
 export class AppDatabase extends Dexie {
   classes!: Table<ClassRecord, number>;
@@ -42,6 +43,37 @@ export class AppDatabase extends Dexie {
     this.version(3).stores({
       attendance: '++id, classId, studentId, date, [classId+date], [classId+studentId+date]',
     });
+
+    this.version(4)
+      .stores({})
+      .upgrade(async (tx) => {
+        const now = new Date().toISOString();
+        const tables = ['classes', 'students', 'curriculum', 'progress', 'attendance', 'stickers', 'records'];
+        for (const name of tables) {
+          const rows = await tx.table(name).toArray();
+          await Promise.all(rows.map((r) => tx.table(name).update(r.id, { updatedAt: now })));
+        }
+      });
+
+    // Auto-stamp updatedAt on every write, but never override a caller-supplied value —
+    // the Sheets-sync merge path (src/db/sheetsSync.ts) writes records with an explicit
+    // updatedAt taken from the sheet, and that timestamp must survive for LWW comparisons
+    // on the next sync tick, not get overwritten with "now".
+    for (const table of [this.classes, this.students, this.curriculum, this.progress, this.attendance, this.stickers, this.records]) {
+      table.hook('creating', function (_primKey, obj) {
+        const record = obj as { updatedAt?: string };
+        if (!record.updatedAt) record.updatedAt = new Date().toISOString();
+        notifyDirty();
+      });
+      table.hook('updating', function (modifications) {
+        notifyDirty();
+        if ((modifications as { updatedAt?: string }).updatedAt) return {};
+        return { updatedAt: new Date().toISOString() };
+      });
+      table.hook('deleting', function () {
+        notifyDirty();
+      });
+    }
   }
 }
 

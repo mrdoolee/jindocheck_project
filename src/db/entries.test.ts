@@ -47,6 +47,14 @@ describe('entries', () => {
     expect(entries[0].kind).toBe('sticker');
   });
 
+  it('filters by date', async () => {
+    await addAttendance(1, 100, '출석', '', '2026-08-10');
+    await addAttendance(1, 100, '결석', '', '2026-08-11');
+    const entries = await listEntries(1, { date: '2026-08-10' });
+    expect(entries).toHaveLength(1);
+    expect(entries[0].date).toBe('2026-08-10');
+  });
+
   it('filters by both studentId and kind (AND semantics)', async () => {
     // Attendance for student 100 (matches studentId:100 only)
     await addAttendance(1, 100, '출석', '', '2026-08-10');

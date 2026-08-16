@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { db } from '../../db/db';
 import AttendanceTab from './AttendanceTab';
@@ -10,15 +10,22 @@ beforeEach(async () => {
 });
 
 describe('AttendanceTab', () => {
-  it('adds a student to the roster', async () => {
-    const user = userEvent.setup();
+  it('does not render a student-add box', async () => {
+    await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
     render(<AttendanceTab classId={1} />);
 
-    await user.type(screen.getByPlaceholderText('번호'), '1');
-    await user.type(screen.getByPlaceholderText('이름'), '홍길동');
-    await user.click(screen.getByText('학생 추가'));
+    expect(await screen.findByText('홍길동')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('번호')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('이름')).not.toBeInTheDocument();
+    expect(screen.queryByText('학생 추가')).not.toBeInTheDocument();
+  });
+
+  it('does not render a delete button for students', async () => {
+    await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
+    render(<AttendanceTab classId={1} />);
 
     expect(await screen.findByText('홍길동')).toBeInTheDocument();
+    expect(screen.queryByText('삭제')).not.toBeInTheDocument();
   });
 
   it('does not render editable name/number inputs for existing students', async () => {
@@ -62,7 +69,7 @@ describe('AttendanceTab', () => {
     });
   });
 
-  it('toggles to the attendance history view', async () => {
+  it('toggles to the attendance history view for the selected date', async () => {
     const studentId = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
     await db.attendance.add({ classId: 1, studentId, date: '2026-01-15', status: '결석', note: '' });
 
@@ -70,7 +77,23 @@ describe('AttendanceTab', () => {
     render(<AttendanceTab classId={1} />);
 
     await user.click(screen.getByText('출결 이력 보기'));
+    fireEvent.change(screen.getByLabelText('이력 조회 날짜'), { target: { value: '2026-01-15' } });
 
     expect(await screen.findByText(/결석/)).toBeInTheDocument();
+  });
+
+  it('history view only shows entries for the selected date', async () => {
+    const studentId = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
+    await db.attendance.add({ classId: 1, studentId, date: '2026-01-15', status: '결석', note: '' });
+    await db.attendance.add({ classId: 1, studentId, date: '2026-01-16', status: '지각', note: '' });
+
+    const user = userEvent.setup();
+    render(<AttendanceTab classId={1} />);
+
+    await user.click(screen.getByText('출결 이력 보기'));
+    fireEvent.change(screen.getByLabelText('이력 조회 날짜'), { target: { value: '2026-01-15' } });
+
+    expect(await screen.findByText(/결석/)).toBeInTheDocument();
+    expect(screen.queryByText(/지각/)).not.toBeInTheDocument();
   });
 });

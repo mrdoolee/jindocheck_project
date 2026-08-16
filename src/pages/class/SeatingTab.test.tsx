@@ -6,6 +6,7 @@ import SeatingTab from './SeatingTab';
 
 beforeEach(async () => {
   await db.students.clear();
+  await db.classes.clear();
 });
 
 function makeDataTransfer(studentId: number) {
@@ -105,5 +106,44 @@ describe('SeatingTab', () => {
       expect(alertSpy).toHaveBeenCalled();
     });
     expect(alertSpy.mock.calls[0][0]).toContain('99');
+  });
+
+  it('defaults to a 6x6 grid when the class has no saved seating size', async () => {
+    render(<SeatingTab classId={1} />);
+
+    expect(await screen.findByLabelText('좌석-5-5')).toBeInTheDocument();
+    expect(screen.queryByLabelText('좌석-6-0')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('행 개수')).toHaveValue(6);
+    expect(screen.getByLabelText('열 개수')).toHaveValue(6);
+  });
+
+  it('resizes the grid and persists the new size on the class', async () => {
+    await db.classes.add({ id: 1, name: '1', createdAt: new Date().toISOString(), order: 0 });
+    render(<SeatingTab classId={1} />);
+    await screen.findByLabelText('좌석-0-0');
+
+    fireEvent.change(screen.getByLabelText('행 개수'), { target: { value: '3' } });
+
+    await waitFor(async () => {
+      const cls = await db.classes.get(1);
+      expect(cls?.seatRows).toBe(3);
+    });
+    expect(screen.queryByLabelText('좌석-4-0')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('좌석-2-0')).toBeInTheDocument();
+  });
+
+  it('unseats students who fall outside a shrunk grid', async () => {
+    await db.classes.add({ id: 1, name: '1', createdAt: new Date().toISOString(), order: 0 });
+    const studentId = await db.students.add({ classId: 1, number: 1, name: '학생A', seatRow: 5, seatCol: 5 });
+    render(<SeatingTab classId={1} />);
+    await screen.findByText('학생A');
+
+    fireEvent.change(screen.getByLabelText('열 개수'), { target: { value: '2' } });
+
+    await waitFor(async () => {
+      const student = await db.students.get(studentId);
+      expect(student?.seatRow).toBeNull();
+      expect(student?.seatCol).toBeNull();
+    });
   });
 });

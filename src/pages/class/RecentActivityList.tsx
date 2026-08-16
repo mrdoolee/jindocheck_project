@@ -127,15 +127,25 @@ export default function RecentActivityList({
   classId,
   filters,
   limit,
+  sortBy = 'date',
 }: {
   classId: number;
   filters?: EntryFilters;
   limit?: number;
+  sortBy?: 'date' | 'name';
 }) {
   const students = useLiveQuery(() => db.students.where('classId').equals(classId).toArray(), [classId]) ?? [];
   const studentById = new Map(students.map((s) => [s.id, s]));
   const entries = useLiveQuery(() => listEntries(classId, filters ?? {}), [classId, filters]) ?? [];
-  const shown = limit ? entries.slice(0, limit) : entries;
+  const ordered =
+    sortBy === 'name'
+      ? [...entries].sort((a, b) => {
+          const aName = studentById.get(a.studentId)?.name ?? '';
+          const bName = studentById.get(b.studentId)?.name ?? '';
+          return aName.localeCompare(bName, 'ko');
+        })
+      : entries;
+  const shown = limit ? ordered.slice(0, limit) : ordered;
 
   return (
     <ul className="divide-y divide-border">

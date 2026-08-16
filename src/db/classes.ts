@@ -20,6 +20,18 @@ export async function reorderClasses(orderedIds: number[]): Promise<void> {
   });
 }
 
+export async function updateSeatingSize(classId: number, rows: number, cols: number): Promise<void> {
+  await db.transaction('rw', db.classes, db.students, async () => {
+    await db.classes.update(classId, { seatRows: rows, seatCols: cols });
+    const students = await db.students.where('classId').equals(classId).toArray();
+    await Promise.all(
+      students
+        .filter((s) => s.seatRow !== null && s.seatCol !== null && (s.seatRow >= rows || s.seatCol >= cols))
+        .map((s) => db.students.update(s.id!, { seatRow: null, seatCol: null }))
+    );
+  });
+}
+
 export async function deleteClass(id: number): Promise<void> {
   await db.transaction(
     'rw',

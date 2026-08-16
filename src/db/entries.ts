@@ -77,6 +77,7 @@ export async function updateNoteEntry(
 export interface EntryFilters {
   studentId?: number;
   kind?: EntryKind;
+  date?: string;
 }
 
 export async function listEntries(classId: number, filters: EntryFilters = {}): Promise<Entry[]> {
@@ -119,5 +120,6 @@ export async function listEntries(classId: number, filters: EntryFilters = {}): 
   return entries
     .filter((e) => filters.studentId === undefined || e.studentId === filters.studentId)
     .filter((e) => filters.kind === undefined || e.kind === filters.kind)
+    .filter((e) => filters.date === undefined || e.date === filters.date)
     .sort((a, b) => b.date.localeCompare(a.date));
 }
