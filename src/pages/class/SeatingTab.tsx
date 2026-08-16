@@ -163,7 +163,7 @@ export default function SeatingTab({ classId }: { classId: number }) {
                         onDragStart={(e) => e.dataTransfer.setData('text/plain', String(student.id))}
                         className="w-full cursor-grab select-none rounded-md bg-primary px-1 py-1.5 text-xs font-medium text-primary-foreground shadow-sm active:cursor-grabbing"
                       >
-                        {student.name}
+                        {student.number}번 {student.name}
                       </div>
                     )}
                   </div>
@@ -185,7 +185,7 @@ export default function SeatingTab({ classId }: { classId: number }) {
               onDragStart={(e) => e.dataTransfer.setData('text/plain', String(s.id!))}
               className="cursor-grab select-none rounded-full border border-border bg-white px-3 py-1 text-xs font-medium shadow-sm active:cursor-grabbing"
             >
-              {s.name}
+              {s.number}번 {s.name}
             </div>
           ))}
           {unseated.length === 0 && (

@@ -62,7 +62,7 @@ describe('Sidebar sync status badge', () => {
     expect(screen.getByText(/동기화 중/)).toBeInTheDocument();
   });
 
-  it('shows the last-synced time when idle', () => {
+  it('shows a fixed "실시간 동기화 중" label when idle (not a changing relative timestamp)', () => {
     vi.mocked(useSheetsSync).mockReturnValue({
       enabled: true,
       connectedEmail: 'teacher@example.com',
@@ -74,7 +74,7 @@ describe('Sidebar sync status badge', () => {
       disconnect: vi.fn(),
     });
     renderSidebar();
-    expect(screen.getByText(/동기화됨/)).toBeInTheDocument();
+    expect(screen.getByText('🔄 실시간 동기화 중')).toBeInTheDocument();
   });
 
   it('shows a retry control on error and calls syncNow when clicked', async () => {
@@ -122,5 +122,25 @@ describe('Sidebar mobile drawer', () => {
 
     await user.click(screen.getByText('🏠 홈'));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('Sidebar bottom section', () => {
+  it('has no data-export shortcut', () => {
+    renderSidebar();
+    expect(screen.queryByText(/데이터 내보내기/)).not.toBeInTheDocument();
+  });
+
+  it('opens and closes the user manual modal', async () => {
+    const user = userEvent.setup();
+    renderSidebar();
+
+    expect(screen.queryByRole('dialog', { name: '사용자 매뉴얼' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByText('📖 사용자 매뉴얼'));
+    expect(screen.getByRole('dialog', { name: '사용자 매뉴얼' })).toBeInTheDocument();
+
+    await user.click(screen.getByText('닫기'));
+    expect(screen.queryByRole('dialog', { name: '사용자 매뉴얼' })).not.toBeInTheDocument();
   });
 });

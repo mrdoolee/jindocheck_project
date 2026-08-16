@@ -23,7 +23,7 @@ describe('SeatingTab', () => {
     const studentId = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
     render(<SeatingTab classId={1} />);
 
-    expect(await screen.findByText('홍길동')).toBeInTheDocument();
+    expect(await screen.findByText('1번 홍길동')).toBeInTheDocument();
 
     const targetCell = screen.getByLabelText('좌석-0-0');
     fireEvent.drop(targetCell, { dataTransfer: makeDataTransfer(studentId) });
@@ -38,8 +38,8 @@ describe('SeatingTab', () => {
     const studentBId = await db.students.add({ classId: 1, number: 2, name: '학생B', seatRow: 1, seatCol: 1 });
     render(<SeatingTab classId={1} />);
 
-    expect(await screen.findByText('학생A')).toBeInTheDocument();
-    expect(await screen.findByText('학생B')).toBeInTheDocument();
+    expect(await screen.findByText('1번 학생A')).toBeInTheDocument();
+    expect(await screen.findByText('2번 학생B')).toBeInTheDocument();
 
     const targetCell = screen.getByLabelText('좌석-1-1');
     fireEvent.drop(targetCell, { dataTransfer: makeDataTransfer(studentAId) });
@@ -136,7 +136,7 @@ describe('SeatingTab', () => {
     await db.classes.add({ id: 1, name: '1', createdAt: new Date().toISOString(), order: 0 });
     const studentId = await db.students.add({ classId: 1, number: 1, name: '학생A', seatRow: 5, seatCol: 5 });
     render(<SeatingTab classId={1} />);
-    await screen.findByText('학생A');
+    await screen.findByText('1번 학생A');
 
     fireEvent.change(screen.getByLabelText('열 개수'), { target: { value: '2' } });
 

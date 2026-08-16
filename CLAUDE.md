@@ -49,7 +49,7 @@ Three top-level routes, each independently tabbed:
 - `/setup/*` — `SettingsPage` owns its own tab bar (반 관리 / 진도표 관리 / 명단 관리 / 백업 / Google 시트) over `src/pages/setup/*Page.tsx`, each a thin wrapper around a `*Manager` component.
 - `/class/:classId/*` — `ClassPage` owns a 4-tab bar in this fixed order: **진도체크** (`ProgressTab`) → **출결확인** (`AttendanceTab`) → **누가기록** (`RecordsTab`) → **자리배치표** (`SeatingTab`). Tab order and Korean labels are meaningful UI decisions, not arbitrary — keep them in sync if reordering.
 
-`src/components/layout/Shell.tsx` + `Sidebar.tsx` provide the persistent dark sidebar; the sidebar's class list order follows `classes.order` (drag-and-drop reorderable in `ClassManager`), not alphabetical.
+`src/components/layout/Shell.tsx` + `Sidebar.tsx` provide the persistent dark sidebar; the sidebar's class list order follows `classes.order` (drag-and-drop reorderable in `ClassManager`), not alphabetical. Below `md`, the sidebar is an off-canvas drawer (`Sidebar`'s `open`/`onClose` props, state owned by `Shell`) rather than a static column — `Shell` renders a mobile-only header bar with the ☰ toggle. The sidebar's bottom section has a "📖 사용자 매뉴얼" button that opens `UserManualModal.tsx` (a summarized in-app guide); the full reference — including a table of every Google Sheets tab/column and which ones are safe to hand-edit — lives in `docs/user-manual.md`. Keep the two in sync if either changes.
 
 ### UI primitives (`src/components/ui/`)
 
