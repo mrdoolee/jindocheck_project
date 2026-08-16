@@ -358,4 +358,46 @@ describe('syncTick', () => {
 
     expect(await db.classes.get(id)).toBeTruthy();
   });
+
+  it('does not commit lastKnownIds when the push fails, so a later tick cannot mistake un-pushed local data for a sheet-side deletion', async () => {
+    const id = await db.classes.add({ name: '푸시실패해도살아야함', createdAt: '2026-01-01', order: 0 });
+
+    // First tick: pull succeeds (empty sheet), but the push fails (e.g. a transient
+    // network/auth error). If lastKnownIds were committed before push confirms success,
+    // this class's id would be wrongly marked "known" even though the sheet never got it.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        if (!init || init.method === undefined) {
+          return new Response(
+            JSON.stringify({
+              tables: { classes: [], students: [], curriculum: [], progress: [], attendance: [], stickers: [], records: [] },
+            }),
+            { status: 200 }
+          );
+        }
+        if (init.method === 'POST') {
+          return new Response(JSON.stringify({ error: '동기화 서버 오류' }), { status: 502 });
+        }
+        throw new Error('unexpected request');
+      })
+    );
+    await expect(syncTick()).rejects.toThrow();
+
+    // Second tick: pull still sees the same empty sheet (push never landed), this time push
+    // succeeds. The class must not have been deleted by either tick.
+    const pushed = stubFetch({
+      classes: [],
+      students: [],
+      curriculum: [],
+      progress: [],
+      attendance: [],
+      stickers: [],
+      records: [],
+    });
+    await syncTick();
+
+    expect(await db.classes.get(id)).toBeTruthy();
+    expect(pushed[0].tables!.classes.some((row) => row[1] === '푸시실패해도살아야함')).toBe(true);
+  });
 });

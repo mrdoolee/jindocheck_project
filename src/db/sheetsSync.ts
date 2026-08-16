@@ -290,9 +290,15 @@ export async function syncTick(options: { apiBase?: string } = {}): Promise<Sync
     newLastKnownAll[name] = localRecords.map((r) => r.id).filter((id): id is number => id != null);
     tables[name] = recordsToGrid(name, localRecords);
   }
-  setLastKnownIds(newLastKnownAll as Record<TableName, number[]>);
 
   await pushSheet(apiBase, tables);
+  // Only commit lastKnownIds once the push actually succeeded. If pushSheet() throws
+  // (a transient network/auth error, a Sheets API hiccup) and we'd already written
+  // "these ids are on the sheet now", the *next* tick's pull would still see the old
+  // (un-pushed-to) sheet state and read every local id as "known but missing from the
+  // sheet" — i.e. deleted — wiping local data over a failure that had nothing to do
+  // with any real deletion. This was a real production incident.
+  setLastKnownIds(newLastKnownAll as Record<TableName, number[]>);
 
   const syncedAt = new Date().toISOString();
   localStorage.setItem(LAST_SYNCED_KEY, syncedAt);
