@@ -59,7 +59,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const spreadsheetId = existing
       ? existing.spreadsheetId
-      : (await createSpreadsheet('학급 진도 관리 동기화', [...TABLE_NAMES], tokens.access_token)).spreadsheetId;
+      : (
+          await createSpreadsheet(
+            `학급 진도 관리 동기화 (${new Date().toISOString().slice(0, 10)})`,
+            [...TABLE_NAMES],
+            tokens.access_token
+          )
+        ).spreadsheetId;
 
     await saveUserRecord(sub, {
       refreshToken: tokens.refresh_token,

@@ -60,7 +60,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
-    console.error('api/sheet error:', err);
     res.status(502).json({ error: (err as Error).message });
   }
 }
