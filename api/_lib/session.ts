@@ -91,8 +91,10 @@ export async function saveUserRecord(sub: string, record: GoogleUserRecord): Pro
   await kv.set(`google-user:${sub}`, { ...record, refreshToken: encryptToken(record.refreshToken) });
 }
 
-export async function deleteUserRecord(sub: string): Promise<void> {
-  await kv.del(`google-user:${sub}`);
+export async function clearUserToken(sub: string): Promise<void> {
+  const raw = await kv.get<GoogleUserRecord>(`google-user:${sub}`);
+  if (!raw) return;
+  await kv.set(`google-user:${sub}`, { ...raw, refreshToken: encryptToken('') });
 }
 
 export { SESSION_TTL_SECONDS };

@@ -5,7 +5,7 @@ import {
   deleteSession,
   getSessionSub,
   getUserRecord,
-  deleteUserRecord,
+  clearUserToken,
   SESSION_COOKIE_NAME,
 } from '../_lib/session.js';
 
@@ -33,7 +33,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // so the user isn't stuck "connected" server-side with no way to disconnect.
       }
     }
-    await deleteUserRecord(sub);
+    // Keep the spreadsheetId mapping (not the token) so reconnecting with the same
+    // Google account resumes the same sheet instead of creating a new one — drive.file
+    // scope means we have no other way to find it again once the mapping is gone.
+    await clearUserToken(sub);
   }
 
   await deleteSession(sessionId);
