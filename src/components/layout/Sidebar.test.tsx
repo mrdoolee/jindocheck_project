@@ -9,16 +9,26 @@ vi.mock('@/hooks/useSheetsSync', () => ({
   useSheetsSync: vi.fn(),
 }));
 
-function renderSidebar() {
+function renderSidebar(props?: { open?: boolean; onClose?: () => void }) {
   return render(
     <MemoryRouter>
-      <Sidebar />
+      <Sidebar {...props} />
     </MemoryRouter>
   );
 }
 
 beforeEach(() => {
   vi.mocked(useSheetsSync).mockReset();
+  vi.mocked(useSheetsSync).mockReturnValue({
+    enabled: false,
+    connectedEmail: null,
+    status: 'idle',
+    lastSyncedAt: null,
+    error: null,
+    syncNow: vi.fn(),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  });
 });
 
 describe('Sidebar sync status badge', () => {
@@ -85,5 +95,32 @@ describe('Sidebar sync status badge', () => {
     const retryButton = screen.getByText(/동기화 실패/);
     await user.click(retryButton);
     expect(syncNow).toHaveBeenCalled();
+  });
+});
+
+describe('Sidebar mobile drawer', () => {
+  it('shows no backdrop when closed', () => {
+    renderSidebar({ open: false });
+    expect(document.querySelector('[aria-hidden="true"]')).not.toBeInTheDocument();
+  });
+
+  it('shows a backdrop and calls onClose when it is clicked, while open', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    renderSidebar({ open: true, onClose });
+
+    const backdrop = document.querySelector('[aria-hidden="true"]');
+    expect(backdrop).toBeInTheDocument();
+    await user.click(backdrop!);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('calls onClose when a nav link is clicked (auto-close on navigate)', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    renderSidebar({ open: true, onClose });
+
+    await user.click(screen.getByText('🏠 홈'));
+    expect(onClose).toHaveBeenCalled();
   });
 });

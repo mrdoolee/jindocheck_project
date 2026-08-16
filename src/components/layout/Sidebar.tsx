@@ -53,45 +53,59 @@ async function handleExport() {
   URL.revokeObjectURL(url);
 }
 
-export default function Sidebar() {
+export default function Sidebar({ open = false, onClose = () => {} }: { open?: boolean; onClose?: () => void }) {
   const classes = useLiveQuery(() => db.classes.orderBy('order').toArray(), []) ?? [];
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-slate-900 p-4 text-slate-100">
-      <NavLink to="/" className="flex items-center gap-2 px-2 py-1">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-          학
-        </span>
-        <span className="text-base font-bold tracking-tight">학급 진도 관리</span>
-      </NavLink>
-
-      <nav className="flex flex-col gap-1">
-        <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">관리 학급</p>
-        <NavLink to="/" end className={navItemClass}>
-          🏠 홈
-        </NavLink>
-        {classes.map((c) => (
-          <NavLink key={c.id} to={`/class/${c.id}`} className={navItemClass}>
-            🎒 {c.name}
-          </NavLink>
-        ))}
-        {classes.length === 0 && (
-          <p className="px-3 py-1 text-xs text-slate-500">등록된 학급이 없습니다.</p>
+    <>
+      {open && (
+        <div
+          aria-hidden="true"
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+        />
+      )}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-slate-900 p-4 text-slate-100 transition-transform duration-200 md:static md:translate-x-0',
+          open ? 'translate-x-0' : '-translate-x-full'
         )}
-      </nav>
-
-      <div className="mt-auto flex flex-col gap-1">
-        <NavLink to="/setup" className={navItemClass}>
-          ⚙️ 설정 및 백업
+      >
+        <NavLink to="/" onClick={onClose} className="flex items-center gap-2 px-2 py-1">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+            학
+          </span>
+          <span className="text-base font-bold tracking-tight">학급 진도 관리</span>
         </NavLink>
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
-        >
-          ⬆️ 데이터 내보내기
-        </button>
-        <SyncStatusBadge />
-      </div>
-    </aside>
+
+        <nav className="flex flex-col gap-1">
+          <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">관리 학급</p>
+          <NavLink to="/" end onClick={onClose} className={navItemClass}>
+            🏠 홈
+          </NavLink>
+          {classes.map((c) => (
+            <NavLink key={c.id} to={`/class/${c.id}`} onClick={onClose} className={navItemClass}>
+              🎒 {c.name}
+            </NavLink>
+          ))}
+          {classes.length === 0 && (
+            <p className="px-3 py-1 text-xs text-slate-500">등록된 학급이 없습니다.</p>
+          )}
+        </nav>
+
+        <div className="mt-auto flex flex-col gap-1">
+          <NavLink to="/setup" onClick={onClose} className={navItemClass}>
+            ⚙️ 설정 및 백업
+          </NavLink>
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+          >
+            ⬆️ 데이터 내보내기
+          </button>
+          <SyncStatusBadge />
+        </div>
+      </aside>
+    </>
   );
 }
