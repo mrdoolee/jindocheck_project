@@ -174,6 +174,16 @@ function setLastKnownIds(all: Record<TableName, number[]>): void {
   localStorage.setItem(LAST_KNOWN_IDS_KEY, JSON.stringify(all));
 }
 
+// Call before connecting/reconnecting to a Google account. lastKnownIds is what makes an
+// id "missing from this pull" mean "deleted" instead of "not yet pushed" — but that history
+// is only valid against the spreadsheet it was recorded against. A fresh connection may bind
+// to a brand-new (empty) spreadsheet, and without this reset the first pull would see every
+// locally-known id as "gone from the sheet" and delete it locally. This was a real bug that
+// wiped local classes/students/records on reconnect — always clear this before a new connect.
+export function resetLastKnownIds(): void {
+  localStorage.removeItem(LAST_KNOWN_IDS_KEY);
+}
+
 const deleteHandlers: Record<TableName, (id: number) => Promise<void>> = {
   classes: (id) => deleteClass(id),
   students: (id) => deleteStudent(id),

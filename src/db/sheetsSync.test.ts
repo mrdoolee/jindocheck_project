@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { db } from './db';
-import { recordsToGrid, gridToRecords, SheetSchemaError, syncTick } from './sheetsSync';
+import { recordsToGrid, gridToRecords, SheetSchemaError, syncTick, resetLastKnownIds } from './sheetsSync';
 
 beforeEach(async () => {
   await db.classes.clear();
@@ -314,5 +314,48 @@ describe('syncTick', () => {
     const classesGrid = pushed[0].tables!.classes;
     expect(classesGrid[0]).toEqual(['id', 'name', 'createdAt', 'order', 'seatRows', 'seatCols', 'updatedAt']);
     expect(classesGrid.some((row) => row[1] === '푸시테스트')).toBe(true);
+  });
+
+  it('without a reset, stale lastKnownIds from a previous connection wipes local data against a fresh empty sheet (documents the bug resetLastKnownIds fixes)', async () => {
+    const id = await db.classes.add({ name: '지워지면안됐음', createdAt: '2026-01-01', order: 0 });
+    localStorage.setItem('sheets-sync:last-known-ids:v1', JSON.stringify({ classes: [id] }));
+
+    stubFetch({
+      classes: [],
+      students: [],
+      curriculum: [],
+      progress: [],
+      attendance: [],
+      stickers: [],
+      records: [],
+    });
+    await syncTick();
+
+    expect(await db.classes.get(id)).toBeUndefined();
+  });
+
+  it('resetLastKnownIds() prevents a fresh (empty) sheet from being read as "everything was deleted"', async () => {
+    const id = await db.classes.add({ name: '살아있어야함', createdAt: '2026-01-01', order: 0 });
+
+    // Simulate stale tracking left over from a previous Google account connection —
+    // this id was known against a DIFFERENT (now-disconnected) spreadsheet.
+    localStorage.setItem('sheets-sync:last-known-ids:v1', JSON.stringify({ classes: [id] }));
+
+    // Reconnecting should reset that stale history before the first sync against the
+    // new, empty spreadsheet — this is what api/auth/google/start's connect() does.
+    resetLastKnownIds();
+
+    stubFetch({
+      classes: [],
+      students: [],
+      curriculum: [],
+      progress: [],
+      attendance: [],
+      stickers: [],
+      records: [],
+    });
+    await syncTick();
+
+    expect(await db.classes.get(id)).toBeTruthy();
   });
 });

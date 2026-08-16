@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { syncTick, getLastSyncedAt } from '../db/sheetsSync';
+import { syncTick, getLastSyncedAt, resetLastKnownIds } from '../db/sheetsSync';
 import { onDirty } from '../db/dirtyBus';
 
 const DEBOUNCE_MS = 4000;
@@ -92,6 +92,10 @@ function useSheetsSyncInternal(): SheetsSyncStatus {
   }, [enabled, runTick]);
 
   const connect = useCallback(() => {
+    // A fresh connection may bind to a brand-new spreadsheet with no sync history —
+    // stale lastKnownIds from a previous connection would make the first pull look
+    // like everything was deleted sheet-side. See resetLastKnownIds()'s comment.
+    resetLastKnownIds();
     window.location.href = '/api/auth/google/start';
   }, []);
 
