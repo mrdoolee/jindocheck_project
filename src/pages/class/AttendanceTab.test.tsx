@@ -42,7 +42,7 @@ describe('AttendanceTab', () => {
     render(<AttendanceTab classId={1} />);
 
     await screen.findByText('홍길동');
-    const row = screen.getByText('홍길동').closest('tr')!;
+    const row = screen.getByText('홍길동').closest('li')!;
     await user.click(within(row).getByText('지각'));
 
     await waitFor(async () => {
@@ -67,6 +67,32 @@ describe('AttendanceTab', () => {
       expect(records).toHaveLength(2);
       expect(records.every((r) => r.status === '출석')).toBe(true);
     });
+  });
+
+  it('clears all attendance marks for the date with the 초기화 button', async () => {
+    await db.students.add({ classId: 1, number: 1, name: '학생A', seatRow: null, seatCol: null });
+    await db.students.add({ classId: 1, number: 2, name: '학생B', seatRow: null, seatCol: null });
+    window.confirm = () => true;
+    const user = userEvent.setup();
+    render(<AttendanceTab classId={1} />);
+
+    await screen.findByText('학생A');
+    expect(screen.getByText('초기화')).toBeDisabled();
+
+    await user.click(screen.getByText('전체 출석'));
+    await waitFor(() => {
+      const today = new Date().toISOString().slice(0, 10);
+      return expect(db.attendance.where({ classId: 1, date: today }).count()).resolves.toBe(2);
+    });
+    expect(screen.getByText('초기화')).toBeEnabled();
+
+    await user.click(screen.getByText('초기화'));
+    await waitFor(async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const records = await db.attendance.where({ classId: 1, date: today }).toArray();
+      expect(records).toHaveLength(0);
+    });
+    expect(screen.getByText('초기화')).toBeDisabled();
   });
 
   it('toggles to the attendance history view for the selected date', async () => {

@@ -54,6 +54,11 @@ export async function getAttendanceForDate(
   return new Map(rows.map((r) => [r.studentId, r.status]));
 }
 
+export async function clearAttendanceForDate(classId: number, date: string): Promise<void> {
+  const rows = await db.attendance.where({ classId, date }).toArray();
+  await Promise.all(rows.map((r) => db.attendance.delete(r.id!)));
+}
+
 export async function deleteEntry(kind: EntryKind, id: number): Promise<void> {
   if (kind === 'attendance') await db.attendance.delete(id);
   if (kind === 'sticker') await db.stickers.delete(id);

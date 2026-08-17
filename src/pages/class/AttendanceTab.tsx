@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
-import { upsertAttendance, getAttendanceForDate } from '../../db/entries';
+import { upsertAttendance, getAttendanceForDate, clearAttendanceForDate } from '../../db/entries';
 import type { AttendanceStatus } from '../../db/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import RecentActivityList from './RecentActivityList';
 
 const STATUSES: AttendanceStatus[] = ['출석', '결석', '지각', '조퇴'];
@@ -20,6 +19,12 @@ export default function AttendanceTab({ classId }: { classId: number }) {
 
   const handleCheckAll = async () => {
     await Promise.all(students.map((s) => upsertAttendance(classId, s.id!, date, '출석')));
+  };
+
+  const handleReset = async () => {
+    if (window.confirm(`${date} 출결 기록을 모두 초기화할까요?`)) {
+      await clearAttendanceForDate(classId, date);
+    }
   };
 
   return (
@@ -44,48 +49,43 @@ export default function AttendanceTab({ classId }: { classId: number }) {
               <Button variant="outline" size="sm" onClick={handleCheckAll} disabled={students.length === 0}>
                 전체 출석
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                disabled={attendanceByStudent.size === 0}
+              >
+                초기화
+              </Button>
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">번호</TableHead>
-                  <TableHead>이름</TableHead>
-                  <TableHead className="w-64">출결</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {students.map((s) => {
-                  const current = attendanceByStudent.get(s.id!);
-                  return (
-                    <TableRow key={s.id}>
-                      <TableCell>{s.number}</TableCell>
-                      <TableCell>{s.name}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {STATUSES.map((status) => (
-                            <Button
-                              key={status}
-                              size="sm"
-                              variant={current === status ? 'default' : 'outline'}
-                              onClick={() => upsertAttendance(classId, s.id!, date, status)}
-                            >
-                              {status}
-                            </Button>
-                          ))}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {students.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={3} className="py-6 text-center text-sm text-muted-foreground">
-                      아직 등록된 학생이 없습니다.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <ul className="divide-y divide-border rounded-md border border-border">
+              {students.map((s) => {
+                const current = attendanceByStudent.get(s.id!);
+                return (
+                  <li key={s.id} className="flex flex-col gap-2 p-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="shrink-0 text-sm text-muted-foreground">{s.number}번</span>
+                      <span className="font-medium">{s.name}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {STATUSES.map((status) => (
+                        <Button
+                          key={status}
+                          size="sm"
+                          variant={current === status ? 'default' : 'outline'}
+                          onClick={() => upsertAttendance(classId, s.id!, date, status)}
+                        >
+                          {status}
+                        </Button>
+                      ))}
+                    </div>
+                  </li>
+                );
+              })}
+              {students.length === 0 && (
+                <li className="py-6 text-center text-sm text-muted-foreground">아직 등록된 학생이 없습니다.</li>
+              )}
+            </ul>
           </CardContent>
         )}
         {showHistory && (
