@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
-import { addCurriculumItem, updateCurriculumItem, deleteCurriculumItem } from '../../db/curriculum';
+import { addCurriculumItem, updateCurriculumItem, deleteCurriculumItem, reorderCurriculumItems } from '../../db/curriculum';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,12 +18,35 @@ export default function CurriculumManager() {
     setLesson('');
   };
 
+  const handleDrop = (e: React.DragEvent, targetId: number) => {
+    const draggingId = Number(e.dataTransfer.getData('text/plain'));
+    if (!draggingId || draggingId === targetId) return;
+    const ids = items.map((item) => item.id!);
+    const fromIndex = ids.indexOf(draggingId);
+    const toIndex = ids.indexOf(targetId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    ids.splice(fromIndex, 1);
+    ids.splice(toIndex, 0, draggingId);
+    reorderCurriculumItems(ids);
+  };
+
   return (
     <Card>
       <CardContent className="space-y-4 p-4">
+        <p className="text-xs text-muted-foreground">항목을 드래그하면 순서를 바꿀 수 있습니다.</p>
         <ol className="list-none divide-y divide-border rounded-md border border-border">
           {items.map((item, index) => (
-            <li key={item.id} className="flex items-center gap-2 px-3 py-2">
+            <li
+              key={item.id}
+              draggable
+              onDragStart={(e) => e.dataTransfer.setData('text/plain', String(item.id))}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleDrop(e, item.id!)}
+              className="flex cursor-grab items-center gap-2 px-3 py-2 active:cursor-grabbing"
+            >
+              <span aria-hidden className="shrink-0 text-muted-foreground">
+                ⠿
+              </span>
               <span className="w-6 shrink-0 text-sm text-muted-foreground">{index + 1}</span>
               <Input
                 key={`unit-${item.id}-${item.unit}`}

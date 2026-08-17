@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { db } from '../../db/db';
+import { addCurriculumItem } from '../../db/curriculum';
 import CurriculumManager from './CurriculumManager';
 
 beforeEach(async () => {
@@ -69,5 +70,35 @@ describe('CurriculumManager', () => {
     // Verify lesson value is still original in the database
     const updatedItems = await db.curriculum.toArray();
     expect(updatedItems[0]?.lesson).toBe('1차시 정수와 유리수');
+  });
+
+  it('reorders curriculum items via drag and drop', async () => {
+    await addCurriculumItem('A단원', 'A차시');
+    await addCurriculumItem('B단원', 'B차시');
+
+    render(<CurriculumManager />);
+    await screen.findByDisplayValue('A단원');
+
+    const items = screen.getAllByRole('listitem');
+    expect(within(items[0]).getByDisplayValue('A단원')).toBeInTheDocument();
+    expect(within(items[1]).getByDisplayValue('B단원')).toBeInTheDocument();
+
+    const allItems = await db.curriculum.toArray();
+    const bItemId = allItems.find((i) => i.unit === 'B단원')!.id!;
+    const store = new Map<string, string>();
+    const dataTransfer = {
+      setData: (k: string, v: string) => store.set(k, v),
+      getData: (k: string) => store.get(k) ?? '',
+    };
+    store.set('text/plain', String(bItemId));
+
+    fireEvent.dragStart(items[1], { dataTransfer });
+    fireEvent.dragOver(items[0], { dataTransfer });
+    fireEvent.drop(items[0], { dataTransfer });
+
+    await waitFor(async () => {
+      const ordered = await db.curriculum.orderBy('order').toArray();
+      expect(ordered.map((i) => i.unit)).toEqual(['B단원', 'A단원']);
+    });
   });
 });
