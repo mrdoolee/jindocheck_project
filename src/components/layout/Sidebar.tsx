@@ -34,6 +34,13 @@ export default function Sidebar({ open = false, onClose = () => {} }: { open?: b
   const classes = useLiveQuery(() => db.classes.orderBy('order').toArray(), []) ?? [];
   const [manualOpen, setManualOpen] = useState(false);
 
+  // On tablet/desktop the sidebar is part of the normal layout, not an overlay — only the
+  // ☰ toggle should close it there. Below md it's still an off-canvas drawer, so navigating
+  // should auto-close it like before.
+  const closeOnMobileNav = () => {
+    if (!window.matchMedia('(min-width: 768px)').matches) onClose();
+  };
+
   return (
     <>
       {open && (
@@ -49,7 +56,7 @@ export default function Sidebar({ open = false, onClose = () => {} }: { open?: b
           open ? 'translate-x-0 md:static' : '-translate-x-full md:hidden'
         )}
       >
-        <NavLink to="/" onClick={onClose} className="flex items-center gap-2 px-2 py-1">
+        <NavLink to="/" onClick={closeOnMobileNav} className="flex items-center gap-2 px-2 py-1">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
             학
           </span>
@@ -58,11 +65,11 @@ export default function Sidebar({ open = false, onClose = () => {} }: { open?: b
 
         <nav className="flex flex-col gap-1">
           <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">관리 학급</p>
-          <NavLink to="/" end onClick={onClose} className={navItemClass}>
+          <NavLink to="/" end onClick={closeOnMobileNav} className={navItemClass}>
             🏠 홈
           </NavLink>
           {classes.map((c) => (
-            <NavLink key={c.id} to={`/class/${c.id}`} onClick={onClose} className={navItemClass}>
+            <NavLink key={c.id} to={`/class/${c.id}`} onClick={closeOnMobileNav} className={navItemClass}>
               🎒 {c.name}
             </NavLink>
           ))}
@@ -72,7 +79,7 @@ export default function Sidebar({ open = false, onClose = () => {} }: { open?: b
         </nav>
 
         <div className="mt-auto flex flex-col gap-1">
-          <NavLink to="/setup" onClick={onClose} className={navItemClass}>
+          <NavLink to="/setup" onClick={closeOnMobileNav} className={navItemClass}>
             ⚙️ 설정 및 백업
           </NavLink>
           <button

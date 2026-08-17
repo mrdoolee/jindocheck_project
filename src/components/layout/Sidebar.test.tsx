@@ -115,13 +115,27 @@ describe('Sidebar mobile drawer', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('calls onClose when a nav link is clicked (auto-close on navigate)', async () => {
+  it('calls onClose when a nav link is clicked on mobile (auto-close on navigate)', async () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
     renderSidebar({ open: true, onClose });
 
     await user.click(screen.getByText('🏠 홈'));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('does not call onClose when a nav link is clicked on tablet/desktop — only the ☰ toggle should close it there', async () => {
+    const matchMediaSpy = vi.spyOn(window, 'matchMedia').mockReturnValue({
+      matches: true,
+    } as MediaQueryList);
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    renderSidebar({ open: true, onClose });
+
+    await user.click(screen.getByText('🏠 홈'));
+    expect(onClose).not.toHaveBeenCalled();
+
+    matchMediaSpy.mockRestore();
   });
 });
 
