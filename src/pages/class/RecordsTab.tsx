@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
-import QuickRecordForm from './QuickRecordForm';
+import NewRecordModal from './NewRecordModal';
 import RecentActivityList from './RecentActivityList';
 
 export default function RecordsTab({ classId }: { classId: number }) {
@@ -14,6 +14,7 @@ export default function RecordsTab({ classId }: { classId: number }) {
   const [showHistory, setShowHistory] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
   const [historyStudentId, setHistoryStudentId] = useState<number | ''>('');
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -24,47 +25,40 @@ export default function RecordsTab({ classId }: { classId: number }) {
       </div>
 
       {!showHistory ? (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-base">학생</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {students.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setSelectedStudentId(s.id!)}
-                  className={cn(
-                    'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                    selectedStudentId === s.id
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border bg-white hover:bg-secondary'
-                  )}
-                >
-                  {s.number} {s.name}
-                </button>
-              ))}
-              {students.length === 0 && <p className="text-sm text-muted-foreground">학생이 없습니다.</p>}
-            </CardContent>
-          </Card>
-
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
-              <CardTitle className="text-base">새 기록 추가</CardTitle>
-              {selectedStudentId !== '' && (
-                <Button variant="outline" size="sm" onClick={() => setSelectedStudentId('')}>
-                  전체 학생 보기
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              <QuickRecordForm
-                classId={classId}
-                presetStudentId={selectedStudentId === '' ? undefined : selectedStudentId}
-              />
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
+            <CardTitle className="text-base">학생</CardTitle>
+            <Button
+              size="sm"
+              onClick={() => {
+                setSelectedStudentId('');
+                setModalOpen(true);
+              }}
+            >
+              새 기록 추가
+            </Button>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {students.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  setSelectedStudentId(s.id!);
+                  setModalOpen(true);
+                }}
+                className={cn(
+                  'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                  selectedStudentId === s.id
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border bg-white hover:bg-secondary'
+                )}
+              >
+                {s.number} {s.name}
+              </button>
+            ))}
+            {students.length === 0 && <p className="text-sm text-muted-foreground">학생이 없습니다.</p>}
+          </CardContent>
+        </Card>
       ) : (
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
@@ -103,6 +97,13 @@ export default function RecordsTab({ classId }: { classId: number }) {
           </CardContent>
         </Card>
       )}
+
+      <NewRecordModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        classId={classId}
+        presetStudentId={selectedStudentId === '' ? undefined : selectedStudentId}
+      />
     </div>
   );
 }

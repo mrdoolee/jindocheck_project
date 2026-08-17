@@ -12,11 +12,26 @@ beforeEach(async () => {
 });
 
 describe('RecordsTab', () => {
+  it('keeps the record form in a closed modal until "새 기록 추가" is clicked', async () => {
+    const user = userEvent.setup();
+    render(<RecordsTab classId={1} />);
+
+    expect(screen.queryByLabelText('학생')).not.toBeInTheDocument();
+
+    await user.click(screen.getByText('새 기록 추가'));
+    expect(await screen.findByRole('dialog', { name: '새 기록 추가' })).toBeInTheDocument();
+    expect(screen.getByLabelText('학생')).toBeInTheDocument();
+
+    await user.click(screen.getByText('닫기'));
+    expect(screen.queryByLabelText('학생')).not.toBeInTheDocument();
+  });
+
   it('saves a note entry with free text content', async () => {
     const studentId = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
     const user = userEvent.setup();
     render(<RecordsTab classId={1} />);
 
+    await user.click(await screen.findByText('새 기록 추가'));
     await waitFor(() => {
       expect(screen.getByLabelText('학생')).toHaveTextContent('홍길동');
     });

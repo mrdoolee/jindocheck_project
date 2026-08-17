@@ -45,8 +45,8 @@ export default function Sidebar({ open = false, onClose = () => {} }: { open?: b
       )}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-slate-900 p-4 text-slate-100 transition-transform duration-200 md:static md:translate-x-0',
-          open ? 'translate-x-0' : '-translate-x-full'
+          'fixed inset-y-0 left-0 z-50 flex h-full min-h-0 w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-slate-900 p-4 text-slate-100 transition-transform duration-200',
+          open ? 'translate-x-0 md:static' : '-translate-x-full md:hidden'
         )}
       >
         <NavLink to="/" onClick={onClose} className="flex items-center gap-2 px-2 py-1">

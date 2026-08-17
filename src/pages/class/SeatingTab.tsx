@@ -161,9 +161,10 @@ export default function SeatingTab({ classId }: { classId: number }) {
                       <div
                         draggable
                         onDragStart={(e) => e.dataTransfer.setData('text/plain', String(student.id))}
-                        className="w-full cursor-grab select-none rounded-md bg-primary px-1 py-1.5 text-xs font-medium text-primary-foreground shadow-sm active:cursor-grabbing"
+                        className="flex w-full cursor-grab select-none flex-col items-center rounded-md bg-primary px-1 py-1 leading-tight text-primary-foreground shadow-sm active:cursor-grabbing"
                       >
-                        {student.number}번 {student.name}
+                        <span className="text-[11px]">{student.number}번</span>
+                        <span className="text-xs font-medium">{student.name}</span>
                       </div>
                     )}
                   </div>

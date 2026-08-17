@@ -25,14 +25,14 @@ export default function ClassPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
       <h1 className="text-2xl font-bold tracking-tight">{klass.name}</h1>
-      <nav className="flex gap-1 border-b border-border">
+      <nav className="flex gap-1 overflow-x-auto border-b border-border">
         {TABS.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
             className={({ isActive }) =>
               cn(
-                'rounded-t-md border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                'shrink-0 whitespace-nowrap rounded-t-md border-b-2 px-2 py-2 text-xs font-medium transition-colors sm:px-3 sm:text-sm',
                 isActive
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
