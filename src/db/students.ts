@@ -11,7 +11,7 @@ export async function listStudents(classId: number): Promise<StudentRecord[]> {
 
 export async function updateStudent(
   id: number,
-  changes: Partial<Pick<StudentRecord, 'number' | 'name'>>
+  changes: Partial<Pick<StudentRecord, 'number' | 'name' | 'role'>>
 ): Promise<void> {
   await db.students.update(id, changes);
 }

@@ -13,6 +13,7 @@ export interface StudentRecord {
   classId: number;
   number: number;
   name: string;
+  role?: string | null;
   seatRow: number | null;
   seatCol: number | null;
   updatedAt?: string;

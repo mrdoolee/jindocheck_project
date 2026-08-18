@@ -40,12 +40,13 @@ const SHEET_SCHEMA: Record<TableName, TableSchema> = {
     },
   },
   students: {
-    columns: ['id', 'classId', 'number', 'name', 'seatRow', 'seatCol', 'updatedAt'],
+    columns: ['id', 'classId', 'number', 'name', 'role', 'seatRow', 'seatCol', 'updatedAt'],
     types: {
       id: 'number',
       classId: 'number',
       number: 'number',
       name: 'string',
+      role: 'nullable-string',
       seatRow: 'nullable-number',
       seatCol: 'nullable-number',
       updatedAt: 'string',

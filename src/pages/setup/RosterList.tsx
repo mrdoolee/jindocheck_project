@@ -44,6 +44,17 @@ export default function RosterList({ classId }: { classId: number | '' }) {
                   if (value) updateStudent(s.id!, { name: value });
                 }}
               />
+              <Input
+                key={`role-${s.id}-${s.role ?? ''}`}
+                defaultValue={s.role ?? ''}
+                aria-label={`역할-${s.id}`}
+                placeholder="실장 등"
+                className="w-24 shrink-0"
+                onBlur={(e) => {
+                  const value = e.target.value.trim();
+                  updateStudent(s.id!, { role: value === '' ? null : value });
+                }}
+              />
               <Button
                 variant="outline"
                 size="sm"

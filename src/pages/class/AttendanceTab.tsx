@@ -6,6 +6,7 @@ import type { AttendanceStatus } from '../../db/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import RecentActivityList from './RecentActivityList';
 
 const STATUSES: AttendanceStatus[] = ['출석', '결석', '지각', '조퇴'];
@@ -66,6 +67,7 @@ export default function AttendanceTab({ classId }: { classId: number }) {
                     <div className="flex items-baseline gap-2">
                       <span className="shrink-0 text-sm text-muted-foreground">{s.number}번</span>
                       <span className="font-medium">{s.name}</span>
+                      {s.role && <Badge variant="secondary">{s.role}</Badge>}
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {STATUSES.map((status) => (

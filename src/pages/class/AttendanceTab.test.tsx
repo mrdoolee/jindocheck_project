@@ -36,6 +36,16 @@ describe('AttendanceTab', () => {
     expect(screen.queryByDisplayValue('홍길동')).not.toBeInTheDocument();
   });
 
+  it('shows a role badge next to the name when set, and nothing when unset', async () => {
+    await db.students.add({ classId: 1, number: 1, name: '홍길동', role: '실장', seatRow: null, seatCol: null });
+    await db.students.add({ classId: 1, number: 2, name: '김철수', seatRow: null, seatCol: null });
+    render(<AttendanceTab classId={1} />);
+
+    expect(await screen.findByText('실장')).toBeInTheDocument();
+    const row = screen.getByText('김철수').closest('li')!;
+    expect(within(row).queryByText('실장')).not.toBeInTheDocument();
+  });
+
   it('checks a student present for the selected date via a button', async () => {
     const studentId = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: null, seatCol: null });
     const user = userEvent.setup();

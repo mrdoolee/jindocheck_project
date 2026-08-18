@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { db } from '../../db/db';
 import { createClass } from '../../db/classes';
-import { addStudent } from '../../db/students';
+import { addStudent, updateStudent } from '../../db/students';
 import RosterList from './RosterList';
 
 beforeEach(async () => {
@@ -57,6 +57,37 @@ describe('RosterList', () => {
 
     const student = await db.students.get(studentId);
     expect(student?.name).toBe('홍길동');
+  });
+
+  it('sets a student role on inline-edit blur', async () => {
+    const classId = await createClass('1반');
+    const studentId = await addStudent(classId, 1, '홍길동');
+    const user = userEvent.setup();
+
+    render(<RosterList classId={classId} />);
+
+    const roleInput = await screen.findByLabelText(`역할-${studentId}`);
+    await user.type(roleInput, '실장');
+    roleInput.blur();
+
+    const student = await db.students.get(studentId);
+    expect(student?.role).toBe('실장');
+  });
+
+  it('clears a student role on inline-edit blur', async () => {
+    const classId = await createClass('1반');
+    const studentId = await addStudent(classId, 1, '홍길동');
+    await updateStudent(studentId, { role: '실장' });
+    const user = userEvent.setup();
+
+    render(<RosterList classId={classId} />);
+
+    const roleInput = await screen.findByDisplayValue('실장');
+    await user.clear(roleInput);
+    roleInput.blur();
+
+    const student = await db.students.get(studentId);
+    expect(student?.role).toBeNull();
   });
 
   it('updates a student number on inline-edit blur', async () => {
