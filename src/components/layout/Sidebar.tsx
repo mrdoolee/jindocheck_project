@@ -58,9 +58,9 @@ export default function Sidebar({ open = false, onClose = () => {} }: { open?: b
       >
         <NavLink to="/" onClick={closeOnMobileNav} className="flex items-center gap-2 px-2 py-1">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-            학
+            ✅
           </span>
-          <span className="text-base font-bold tracking-tight">학급 진도 관리</span>
+          <span className="text-base font-bold tracking-tight">진도 췍</span>
         </NavLink>
 
         <nav className="flex flex-col gap-1">

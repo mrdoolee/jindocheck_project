@@ -18,7 +18,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             >
               ☰
             </button>
-            <span className="text-sm font-semibold">학급 진도 관리</span>
+            <span className="text-sm font-semibold">진도 췍</span>
           </header>
           <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
         </div>
