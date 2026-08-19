@@ -69,7 +69,7 @@ export default function TimetableSettingsManager() {
           <Input
             value={schoolCode}
             onChange={(e) => setSchoolCode(e.target.value)}
-            placeholder="학교코드 (예: 39286)"
+            placeholder="학교코드 (예: 12345)"
             aria-label="학교코드"
             className="w-40"
           />

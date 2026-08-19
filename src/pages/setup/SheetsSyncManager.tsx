@@ -28,7 +28,8 @@ export default function SheetsSyncManager() {
             구글 계정을 연결하면 이 학급 데이터를 계정 소유의 스프레드시트로 내보내거나 불러올 수 있습니다.
           </p>
           <p className="text-xs text-muted-foreground">
-            이름/이메일과 시트 접근 권한만 서버에 보관되고, 학생 데이터 자체는 서버에 저장되지 않습니다.
+            스프레드 시트에 접속하기 위한 기본 권한만 서버에 보관되고, 스프레드 시트에 작성된 내용은 서버에
+            저장되지 않습니다.
           </p>
           <Button
             onClick={() => {
@@ -67,7 +68,9 @@ export default function SheetsSyncManager() {
           연결됨: <span className="font-medium text-foreground">{connectedEmail}</span>
         </p>
         <p className="text-sm text-muted-foreground">
-          자동으로 동기화되지 않습니다. 아래 버튼을 눌러 원하는 방향으로 직접 내보내거나 불러오세요.
+          구글 스프레드시트로 데이터를 내보내거나 불러옵니다.
+          <br />
+          자동으로 동기화되지 않으며, 내보내기/불러오기 각각 선택한 방향의 데이터로 반대쪽을 완전히 덮어씁니다.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={handleExport} disabled={status !== 'idle' && status !== 'error'}>
@@ -109,7 +112,7 @@ export default function SheetsSyncManager() {
             연결 해제
           </Button>
           <p className="mt-1 text-xs text-muted-foreground">
-            구글 계정 자체의 접근 권한도 회수됩니다.
+            구글 계정 자체의 스프레드 시트에 대한 접근 권한도 회수됩니다.
           </p>
         </div>
       </CardContent>
