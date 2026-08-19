@@ -7,21 +7,10 @@ import { useSheetsSync } from '@/hooks/useSheetsSync';
 import UserManualModal from './UserManualModal';
 
 function SyncStatusBadge() {
-  const { enabled, status, syncNow } = useSheetsSync();
+  const { enabled } = useSheetsSync();
   if (!enabled) return null;
 
-  if (status === 'error') {
-    return (
-      <button
-        onClick={syncNow}
-        className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-amber-400 transition-colors hover:bg-slate-800"
-      >
-        ⚠️ 동기화 실패 · 다시 시도
-      </button>
-    );
-  }
-
-  return <p className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400">🔄 실시간 동기화 중</p>;
+  return <p className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400">🔗 Google 시트 연동됨</p>;
 }
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>

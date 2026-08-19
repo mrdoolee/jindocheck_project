@@ -1,11 +1,4 @@
-import { db } from './db';
-import { exportData } from './backup';
-import { deleteClass } from './classes';
-import { deleteStudent } from './students';
-import { deleteCurriculumItem } from './curriculum';
-import { deleteEntry } from './entries';
-import { withDirtySuppressed } from './dirtyBus';
-import type { Table } from 'dexie';
+import { exportData, importData, type BackupPayload } from './backup';
 
 export const TABLE_NAMES = [
   'classes',
@@ -159,89 +152,15 @@ export function gridToRecords(tableName: TableName, grid: unknown[][]): AnyRecor
   });
 }
 
-const LAST_KNOWN_IDS_KEY = 'sheets-sync:last-known-ids:v1';
+const LAST_EXPORTED_KEY = 'sheets-sync:last-exported-at';
+const LAST_IMPORTED_KEY = 'sheets-sync:last-imported-at';
 
-function getLastKnownIds(): Record<TableName, number[]> {
-  try {
-    const raw = localStorage.getItem(LAST_KNOWN_IDS_KEY);
-    if (!raw) return {} as Record<TableName, number[]>;
-    return JSON.parse(raw);
-  } catch {
-    return {} as Record<TableName, number[]>;
-  }
+export function getLastExportedAt(): string | null {
+  return localStorage.getItem(LAST_EXPORTED_KEY);
 }
 
-function setLastKnownIds(all: Record<TableName, number[]>): void {
-  localStorage.setItem(LAST_KNOWN_IDS_KEY, JSON.stringify(all));
-}
-
-// Call before connecting/reconnecting to a Google account. lastKnownIds is what makes an
-// id "missing from this pull" mean "deleted" instead of "not yet pushed" — but that history
-// is only valid against the spreadsheet it was recorded against. A fresh connection may bind
-// to a brand-new (empty) spreadsheet, and without this reset the first pull would see every
-// locally-known id as "gone from the sheet" and delete it locally. This was a real bug that
-// wiped local classes/students/records on reconnect — always clear this before a new connect.
-export function resetLastKnownIds(): void {
-  localStorage.removeItem(LAST_KNOWN_IDS_KEY);
-}
-
-const deleteHandlers: Record<TableName, (id: number) => Promise<void>> = {
-  classes: (id) => deleteClass(id),
-  students: (id) => deleteStudent(id),
-  curriculum: (id) => deleteCurriculumItem(id),
-  progress: (id) => db.progress.delete(id),
-  attendance: (id) => deleteEntry('attendance', id),
-  stickers: (id) => deleteEntry('sticker', id),
-  records: (id) => deleteEntry('note', id),
-};
-
-function tableFor(name: TableName): Table<AnyRecord, number> {
-  return db[name] as unknown as Table<AnyRecord, number>;
-}
-
-async function mergeTable(name: TableName, sheetRecords: AnyRecord[], lastKnownIds: number[]): Promise<void> {
-  const table = tableFor(name);
-  const localRecords = await table.toArray();
-  const localById = new Map(localRecords.map((r) => [r.id, r]));
-  const sheetIds = sheetRecords.filter((r) => r.id != null).map((r) => r.id as number);
-
-  for (const sheetRec of sheetRecords) {
-    if (sheetRec.id == null) {
-      const { id: _unused, ...rest } = sheetRec;
-      await table.add(rest as AnyRecord);
-      continue;
-    }
-    const localRec = localById.get(sheetRec.id);
-    if (!localRec) {
-      // We've seen this id before (lastKnownIds) but it's gone locally now — that means
-      // *this* device deleted it. Don't resurrect it from the sheet; let the push step
-      // below drop it from the sheet instead. Only truly-new-to-us ids (never synced
-      // before) get adopted here.
-      const known = lastKnownIds.includes(sheetRec.id);
-      if (!known) {
-        await table.put(sheetRec, sheetRec.id);
-      }
-      continue;
-    }
-    const sheetUpdatedAt = sheetRec.updatedAt ?? '';
-    const localUpdatedAt = localRec.updatedAt ?? '';
-    if (sheetUpdatedAt > localUpdatedAt) {
-      await table.put(sheetRec, sheetRec.id);
-    }
-  }
-
-  const currentSheetIds = new Set(sheetIds);
-  const deletedIds = lastKnownIds.filter((id) => !currentSheetIds.has(id) && localById.has(id));
-  for (const id of deletedIds) {
-    await deleteHandlers[name](id);
-  }
-
-}
-
-const LAST_SYNCED_KEY = 'sheets-sync:last-synced-at';
-
-export function getLastSyncedAt(): string | null {
-  return localStorage.getItem(LAST_SYNCED_KEY);
+export function getLastImportedAt(): string | null {
+  return localStorage.getItem(LAST_IMPORTED_KEY);
 }
 
 export interface SyncResult {
@@ -265,43 +184,32 @@ async function pushSheet(apiBase: string, tables: Record<string, unknown[][]>): 
   if (!res.ok) throw new Error(`동기화 서버 오류 (${res.status})`);
 }
 
-export async function syncTick(options: { apiBase?: string } = {}): Promise<SyncResult> {
+// One-directional, explicit overwrite: local -> sheet. No merge, no per-row id matching —
+// the entire sheet is replaced with this device's current local state.
+export async function exportToSheet(options: { apiBase?: string } = {}): Promise<SyncResult> {
   const apiBase = options.apiBase ?? '';
-  const grids = await fetchSheet(apiBase);
-  const lastKnownAll = getLastKnownIds();
-
-  // Merge writes go through the same Dexie hooks as any user edit, which would otherwise
-  // re-trigger the debounced sync-on-write listener right after this tick finishes.
-  await withDirtySuppressed(async () => {
-    for (const name of TABLE_NAMES) {
-      const records = gridToRecords(name, grids[name] ?? []);
-      await mergeTable(name, records, lastKnownAll[name] ?? []);
-    }
-  });
-
   const payload = await exportData();
   const tables: Record<string, unknown[][]> = {};
-  // lastKnownIds must reflect what we're *about* to push (the post-merge local state),
-  // not what the pull happened to see — otherwise a row pushed in this same tick looks
-  // "never seen" on the next tick and a subsequent local delete of it gets resurrected
-  // from the sheet before the sheet has caught up to the deletion.
-  const newLastKnownAll: Partial<Record<TableName, number[]>> = {};
   for (const name of TABLE_NAMES) {
-    const localRecords = payload.data[name] as AnyRecord[];
-    newLastKnownAll[name] = localRecords.map((r) => r.id).filter((id): id is number => id != null);
-    tables[name] = recordsToGrid(name, localRecords);
+    tables[name] = recordsToGrid(name, payload.data[name] as AnyRecord[]);
   }
-
   await pushSheet(apiBase, tables);
-  // Only commit lastKnownIds once the push actually succeeded. If pushSheet() throws
-  // (a transient network/auth error, a Sheets API hiccup) and we'd already written
-  // "these ids are on the sheet now", the *next* tick's pull would still see the old
-  // (un-pushed-to) sheet state and read every local id as "known but missing from the
-  // sheet" — i.e. deleted — wiping local data over a failure that had nothing to do
-  // with any real deletion. This was a real production incident.
-  setLastKnownIds(newLastKnownAll as Record<TableName, number[]>);
-
   const syncedAt = new Date().toISOString();
-  localStorage.setItem(LAST_SYNCED_KEY, syncedAt);
+  localStorage.setItem(LAST_EXPORTED_KEY, syncedAt);
+  return { syncedAt };
+}
+
+// One-directional, explicit overwrite: sheet -> local. Fully replaces this device's local
+// database with the sheet's contents via the same clear+bulkAdd transaction backup restore uses.
+export async function importFromSheet(options: { apiBase?: string } = {}): Promise<SyncResult> {
+  const apiBase = options.apiBase ?? '';
+  const grids = await fetchSheet(apiBase);
+  const data = {} as BackupPayload['data'];
+  for (const name of TABLE_NAMES) {
+    data[name] = gridToRecords(name, grids[name] ?? []);
+  }
+  await importData({ version: 1, exportedAt: new Date().toISOString(), data });
+  const syncedAt = new Date().toISOString();
+  localStorage.setItem(LAST_IMPORTED_KEY, syncedAt);
   return { syncedAt };
 }

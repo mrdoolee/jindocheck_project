@@ -3,15 +3,13 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SheetsSyncManager from './SheetsSyncManager';
 import { SheetsSyncProvider } from '@/hooks/useSheetsSync';
-import { syncTick, getLastSyncedAt } from '../../db/sheetsSync';
+import { exportToSheet, importFromSheet, getLastExportedAt, getLastImportedAt } from '../../db/sheetsSync';
 
 vi.mock('../../db/sheetsSync', () => ({
-  syncTick: vi.fn(),
-  getLastSyncedAt: vi.fn(() => null),
-}));
-
-vi.mock('../../db/dirtyBus', () => ({
-  onDirty: vi.fn(() => () => {}),
+  exportToSheet: vi.fn(),
+  importFromSheet: vi.fn(),
+  getLastExportedAt: vi.fn(() => null),
+  getLastImportedAt: vi.fn(() => null),
 }));
 
 function stubMeEndpoint(connected: boolean, email?: string) {
@@ -39,8 +37,10 @@ function renderManager() {
 
 beforeEach(() => {
   localStorage.clear();
-  vi.mocked(syncTick).mockReset();
-  vi.mocked(getLastSyncedAt).mockReturnValue(null);
+  vi.mocked(exportToSheet).mockReset();
+  vi.mocked(importFromSheet).mockReset();
+  vi.mocked(getLastExportedAt).mockReturnValue(null);
+  vi.mocked(getLastImportedAt).mockReturnValue(null);
   vi.unstubAllGlobals();
 });
 
@@ -49,33 +49,65 @@ describe('SheetsSyncManager', () => {
     stubMeEndpoint(false);
     renderManager();
     expect(await screen.findByText('구글 계정 연결하기')).toBeInTheDocument();
-    expect(screen.queryByText('지금 동기화')).not.toBeInTheDocument();
+    expect(screen.queryByText('내보내기')).not.toBeInTheDocument();
   });
 
-  it('shows the connected email and sync controls once connected', async () => {
+  it('exports after confirm, and shows the last-exported timestamp', async () => {
     stubMeEndpoint(true, 'teacher@example.com');
-    vi.mocked(syncTick).mockResolvedValue({ syncedAt: '2026-08-15T00:00:00.000Z' });
+    vi.mocked(exportToSheet).mockResolvedValue({ syncedAt: '2026-08-15T00:00:00.000Z' });
+    window.confirm = vi.fn(() => true);
     const user = userEvent.setup();
     renderManager();
 
     expect(await screen.findByText(/teacher@example.com/)).toBeInTheDocument();
 
-    await user.click(screen.getByText('지금 동기화'));
+    await user.click(screen.getByText('내보내기'));
 
+    expect(window.confirm).toHaveBeenCalled();
     await waitFor(() => {
-      expect(syncTick).toHaveBeenCalledWith();
+      expect(exportToSheet).toHaveBeenCalledWith();
     });
-    expect(await screen.findByText(/마지막 동기화:/)).toBeInTheDocument();
+    expect(await screen.findByText(/마지막 내보내기:/)).toBeInTheDocument();
   });
 
-  it('shows an error message when syncTick rejects', async () => {
+  it('does not export when the confirm dialog is dismissed', async () => {
     stubMeEndpoint(true, 'teacher@example.com');
-    vi.mocked(syncTick).mockRejectedValue(new Error('동기화 서버 오류 (401)'));
+    window.confirm = vi.fn(() => false);
     const user = userEvent.setup();
     renderManager();
 
-    await screen.findByText('지금 동기화');
-    await user.click(screen.getByText('지금 동기화'));
+    await screen.findByText('내보내기');
+    await user.click(screen.getByText('내보내기'));
+
+    expect(exportToSheet).not.toHaveBeenCalled();
+  });
+
+  it('imports after confirm, and shows the last-imported timestamp', async () => {
+    stubMeEndpoint(true, 'teacher@example.com');
+    vi.mocked(importFromSheet).mockResolvedValue({ syncedAt: '2026-08-15T00:00:00.000Z' });
+    window.confirm = vi.fn(() => true);
+    const user = userEvent.setup();
+    renderManager();
+
+    await screen.findByText('불러오기');
+    await user.click(screen.getByText('불러오기'));
+
+    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(importFromSheet).toHaveBeenCalledWith();
+    });
+    expect(await screen.findByText(/마지막 불러오기:/)).toBeInTheDocument();
+  });
+
+  it('shows an error message when export rejects', async () => {
+    stubMeEndpoint(true, 'teacher@example.com');
+    vi.mocked(exportToSheet).mockRejectedValue(new Error('동기화 서버 오류 (401)'));
+    window.confirm = vi.fn(() => true);
+    const user = userEvent.setup();
+    renderManager();
+
+    await screen.findByText('내보내기');
+    await user.click(screen.getByText('내보내기'));
 
     expect(await screen.findByText(/동기화 실패:/)).toBeInTheDocument();
   });

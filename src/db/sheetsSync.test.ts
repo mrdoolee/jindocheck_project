@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { db } from './db';
-import { recordsToGrid, gridToRecords, SheetSchemaError, syncTick, resetLastKnownIds } from './sheetsSync';
+import { recordsToGrid, gridToRecords, SheetSchemaError, exportToSheet, importFromSheet } from './sheetsSync';
 
 beforeEach(async () => {
   await db.classes.clear();
@@ -96,16 +96,13 @@ describe('recordsToGrid / gridToRecords round-trip', () => {
   });
 });
 
-describe('syncTick', () => {
-  function stubFetch(getTables: Record<string, unknown[][]>) {
+describe('exportToSheet (local -> sheet, full overwrite)', () => {
+  function stubFetch() {
     const pushed: { tables?: Record<string, unknown[][]> }[] = [];
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
-        if (!init || init.method === undefined) {
-          return new Response(JSON.stringify({ tables: getTables }), { status: 200 });
-        }
-        if (init.method === 'POST') {
+        if (init?.method === 'POST') {
           pushed.push(JSON.parse(init.body as string));
           return new Response(JSON.stringify({ ok: true }), { status: 200 });
         }
@@ -115,279 +112,59 @@ describe('syncTick', () => {
     return pushed;
   }
 
-  it('pulls a newer sheet-side record and applies it locally (LWW: sheet wins)', async () => {
-    const id = await db.classes.add({ name: '원래이름', createdAt: '2026-01-01', order: 0 });
-    await db.classes.update(id, { updatedAt: '2020-01-01T00:00:00.000Z' });
-
-    const sheetGrid = recordsToGrid('classes', [
-      { id, name: '시트에서바뀜', createdAt: '2026-01-01', order: 0, seatRows: null, seatCols: null, updatedAt: '2030-01-01T00:00:00.000Z' },
-    ]);
-    stubFetch({
-      classes: sheetGrid,
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-
-    await syncTick();
-
-    const after = await db.classes.get(id);
-    expect(after?.name).toBe('시트에서바뀜');
-  });
-
-  it('keeps the local record when it is newer than the sheet (LWW: local wins)', async () => {
-    const id = await db.classes.add({ name: '로컬최신', createdAt: '2026-01-01', order: 0 });
-
-    const sheetGrid = recordsToGrid('classes', [
-      { id, name: '시트구버전', createdAt: '2026-01-01', order: 0, seatRows: null, seatCols: null, updatedAt: '2020-01-01T00:00:00.000Z' },
-    ]);
-    stubFetch({
-      classes: sheetGrid,
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-
-    await syncTick();
-
-    const after = await db.classes.get(id);
-    expect(after?.name).toBe('로컬최신');
-  });
-
-  it('creates a locally-missing row that has a blank id in the sheet', async () => {
-    const sheetGrid = [
-      ['id', 'name', 'createdAt', 'order', 'seatRows', 'seatCols', 'updatedAt'],
-      ['', '시트에서추가', '2026-01-01', 0, '', '', '2026-01-01T00:00:00.000Z'],
-    ];
-    stubFetch({
-      classes: sheetGrid,
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-
-    await syncTick();
-
-    const all = await db.classes.toArray();
-    expect(all.some((c) => c.name === '시트에서추가')).toBe(true);
-  });
-
-  it('deletes a local row when it disappears from the sheet after being seen once', async () => {
-    const id = await db.classes.add({ name: '지워질반', createdAt: '2026-01-01', order: 0 });
-
-    // First tick: sheet has the row, establishes lastKnownIds
-    const firstGrid = recordsToGrid('classes', [
-      { id, name: '지워질반', createdAt: '2026-01-01', order: 0, seatRows: null, seatCols: null, updatedAt: '2020-01-01T00:00:00.000Z' },
-    ]);
-    stubFetch({
-      classes: firstGrid,
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-    await syncTick();
-    expect(await db.classes.get(id)).toBeTruthy();
-
-    // Second tick: sheet no longer has the row -> should be deleted locally
-    stubFetch({
-      classes: [['id', 'name', 'createdAt', 'order', 'seatRows', 'seatCols', 'updatedAt']],
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-    await syncTick();
-
-    expect(await db.classes.get(id)).toBeUndefined();
-  });
-
-  it('does not delete a row that was never seen in the sheet yet (not-yet-pushed, not a deletion)', async () => {
-    const id = await db.classes.add({ name: '아직안올라감', createdAt: '2026-01-01', order: 0 });
-
-    stubFetch({
-      classes: [['id', 'name', 'createdAt', 'order', 'seatRows', 'seatCols', 'updatedAt']],
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-    await syncTick();
-
-    expect(await db.classes.get(id)).toBeTruthy();
-  });
-
-  it('does not resurrect a row this device deleted, even if the sheet has not caught up to the deletion yet', async () => {
-    const id = await db.classes.add({ name: '삭제될반', createdAt: '2026-01-01', order: 0 });
-
-    // Simulate a prior successful sync that saw this id (so it's in lastKnownIds).
-    localStorage.setItem('sheets-sync:last-known-ids:v1', JSON.stringify({ classes: [id] }));
-
-    // The user deletes it locally, but the sheet (pulled this same tick) still has the old row —
-    // the sheet hasn't been pushed to since the deletion happened.
-    await db.classes.delete(id);
-
-    const staleSheetGrid = recordsToGrid('classes', [
-      { id, name: '삭제될반', createdAt: '2026-01-01', order: 0, seatRows: null, seatCols: null, updatedAt: '2020-01-01T00:00:00.000Z' },
-    ]);
-    const pushed = stubFetch({
-      classes: staleSheetGrid,
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-
-    await syncTick();
-
-    expect(await db.classes.get(id)).toBeUndefined();
-    const pushedClasses = pushed[0].tables!.classes;
-    expect(pushedClasses.some((row) => row[0] === id)).toBe(false);
-  });
-
-  it('does not resurrect a row deleted right after the tick that first pushed it (real two-tick sequence)', async () => {
-    // Tick 1: sheet starts empty, local has a new class -> gets pushed for the first time.
-    const id = await db.classes.add({ name: '삭제될반', createdAt: '2026-01-01', order: 0 });
-    const pushedTick1 = stubFetch({
-      classes: [],
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-    await syncTick();
-    const sheetAfterTick1 = pushedTick1[0].tables!.classes;
-
-    // Tick 2: the user deletes the class locally. The "sheet", as this device pulls it,
-    // still reflects exactly what tick 1 pushed (nothing has changed it since).
-    await db.classes.delete(id);
-    const pushedTick2 = stubFetch({
-      classes: sheetAfterTick1,
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-    await syncTick();
-
-    expect(await db.classes.get(id)).toBeUndefined();
-    const sheetAfterTick2 = pushedTick2[0].tables!.classes;
-    expect(sheetAfterTick2.some((row) => row[0] === id)).toBe(false);
-  });
-
-  it('pushes the merged local state back to the sheet', async () => {
+  it('pushes the full local state to the sheet, one grid per table', async () => {
     await db.classes.add({ name: '푸시테스트', createdAt: '2026-01-01', order: 0 });
+    const pushed = stubFetch();
 
-    const pushed = stubFetch({
-      classes: [],
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-    await syncTick();
+    await exportToSheet();
 
     expect(pushed).toHaveLength(1);
     const classesGrid = pushed[0].tables!.classes;
     expect(classesGrid[0]).toEqual(['id', 'name', 'createdAt', 'order', 'seatRows', 'seatCols', 'updatedAt']);
     expect(classesGrid.some((row) => row[1] === '푸시테스트')).toBe(true);
+    // every table is included even when empty
+    expect(pushed[0].tables!.students).toEqual([['id', 'classId', 'number', 'name', 'role', 'seatRow', 'seatCol', 'updatedAt']]);
   });
 
-  it('without a reset, stale lastKnownIds from a previous connection wipes local data against a fresh empty sheet (documents the bug resetLastKnownIds fixes)', async () => {
-    const id = await db.classes.add({ name: '지워지면안됐음', createdAt: '2026-01-01', order: 0 });
-    localStorage.setItem('sheets-sync:last-known-ids:v1', JSON.stringify({ classes: [id] }));
+  it('does not touch local data', async () => {
+    const id = await db.classes.add({ name: '로컬유지', createdAt: '2026-01-01', order: 0 });
+    stubFetch();
 
-    stubFetch({
-      classes: [],
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-    await syncTick();
-
-    expect(await db.classes.get(id)).toBeUndefined();
-  });
-
-  it('resetLastKnownIds() prevents a fresh (empty) sheet from being read as "everything was deleted"', async () => {
-    const id = await db.classes.add({ name: '살아있어야함', createdAt: '2026-01-01', order: 0 });
-
-    // Simulate stale tracking left over from a previous Google account connection —
-    // this id was known against a DIFFERENT (now-disconnected) spreadsheet.
-    localStorage.setItem('sheets-sync:last-known-ids:v1', JSON.stringify({ classes: [id] }));
-
-    // Reconnecting should reset that stale history before the first sync against the
-    // new, empty spreadsheet — this is what api/auth/google/start's connect() does.
-    resetLastKnownIds();
-
-    stubFetch({
-      classes: [],
-      students: [],
-      curriculum: [],
-      progress: [],
-      attendance: [],
-      stickers: [],
-      records: [],
-    });
-    await syncTick();
+    await exportToSheet();
 
     expect(await db.classes.get(id)).toBeTruthy();
   });
 
-  it('does not commit lastKnownIds when the push fails, so a later tick cannot mistake un-pushed local data for a sheet-side deletion', async () => {
-    const id = await db.classes.add({ name: '푸시실패해도살아야함', createdAt: '2026-01-01', order: 0 });
-
-    // First tick: pull succeeds (empty sheet), but the push fails (e.g. a transient
-    // network/auth error). If lastKnownIds were committed before push confirms success,
-    // this class's id would be wrongly marked "known" even though the sheet never got it.
+  it('propagates a server error instead of silently succeeding', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
+      vi.fn(async () => new Response(JSON.stringify({ error: '동기화 서버 오류' }), { status: 502 }))
+    );
+    await expect(exportToSheet()).rejects.toThrow();
+  });
+});
+
+describe('importFromSheet (sheet -> local, full overwrite)', () => {
+  function stubFetch(tables: Record<string, unknown[][]>) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
         if (!init || init.method === undefined) {
-          return new Response(
-            JSON.stringify({
-              tables: { classes: [], students: [], curriculum: [], progress: [], attendance: [], stickers: [], records: [] },
-            }),
-            { status: 200 }
-          );
+          return new Response(JSON.stringify({ tables }), { status: 200 });
         }
-        if (init.method === 'POST') {
-          return new Response(JSON.stringify({ error: '동기화 서버 오류' }), { status: 502 });
-        }
-        throw new Error('unexpected request');
+        throw new Error(`unexpected request to ${url}`);
       })
     );
-    await expect(syncTick()).rejects.toThrow();
+  }
 
-    // Second tick: pull still sees the same empty sheet (push never landed), this time push
-    // succeeds. The class must not have been deleted by either tick.
-    const pushed = stubFetch({
-      classes: [],
+  it('replaces local data entirely with the sheet contents', async () => {
+    await db.classes.add({ name: '기존로컬데이터', createdAt: '2026-01-01', order: 0 });
+
+    const sheetGrid = recordsToGrid('classes', [
+      { id: 1, name: '시트데이터', createdAt: '2026-01-01', order: 0, seatRows: null, seatCols: null, updatedAt: 't1' },
+    ]);
+    stubFetch({
+      classes: sheetGrid,
       students: [],
       curriculum: [],
       progress: [],
@@ -395,9 +172,43 @@ describe('syncTick', () => {
       stickers: [],
       records: [],
     });
-    await syncTick();
 
-    expect(await db.classes.get(id)).toBeTruthy();
-    expect(pushed[0].tables!.classes.some((row) => row[1] === '푸시실패해도살아야함')).toBe(true);
+    await importFromSheet();
+
+    const all = await db.classes.toArray();
+    expect(all).toHaveLength(1);
+    expect(all[0].name).toBe('시트데이터');
+  });
+
+  it('results in an empty local table when the sheet tab is empty', async () => {
+    await db.classes.add({ name: '지워질데이터', createdAt: '2026-01-01', order: 0 });
+
+    stubFetch({
+      classes: [['id', 'name', 'createdAt', 'order', 'seatRows', 'seatCols', 'updatedAt']],
+      students: [],
+      curriculum: [],
+      progress: [],
+      attendance: [],
+      stickers: [],
+      records: [],
+    });
+
+    await importFromSheet();
+
+    expect(await db.classes.toArray()).toHaveLength(0);
+  });
+
+  it('propagates SheetSchemaError when a tab header does not match the expected schema', async () => {
+    stubFetch({
+      classes: [['id', 'name']],
+      students: [],
+      curriculum: [],
+      progress: [],
+      attendance: [],
+      stickers: [],
+      records: [],
+    });
+
+    await expect(importFromSheet()).rejects.toThrow(SheetSchemaError);
   });
 });
