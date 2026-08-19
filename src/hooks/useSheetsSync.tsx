@@ -1,15 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { exportToSheet, importFromSheet, getLastExportedAt, getLastImportedAt } from '../db/sheetsSync';
+import { exportToSheet, importFromSheet, getLastExportedAt, getLastImportedAt, readErrorMessage } from '../db/sheetsSync';
+import { pickSpreadsheet } from '../lib/googlePicker';
 
 export interface SheetsSyncStatus {
   enabled: boolean;
   connectedEmail: string | null;
-  status: 'idle' | 'exporting' | 'importing' | 'error';
+  status: 'idle' | 'exporting' | 'importing' | 'selecting' | 'error';
   lastExportedAt: string | null;
   lastImportedAt: string | null;
+  spreadsheetSelectedAt: string | null;
   error: string | null;
   exportNow: () => void;
   importNow: () => void;
+  selectSpreadsheet: () => void;
   connect: () => void;
   disconnect: () => Promise<void>;
 }
@@ -27,9 +30,10 @@ async function fetchConnectionStatus(): Promise<{ connected: boolean; email?: st
 function useSheetsSyncInternal(): SheetsSyncStatus {
   const [enabled, setEnabled] = useState(false);
   const [connectedEmail, setConnectedEmail] = useState<string | null>(null);
-  const [status, setStatus] = useState<'idle' | 'exporting' | 'importing' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'exporting' | 'importing' | 'selecting' | 'error'>('idle');
   const [lastExportedAt, setLastExportedAt] = useState<string | null>(() => getLastExportedAt());
   const [lastImportedAt, setLastImportedAt] = useState<string | null>(() => getLastImportedAt());
+  const [spreadsheetSelectedAt, setSpreadsheetSelectedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const runningRef = useRef(false);
 
@@ -49,6 +53,7 @@ function useSheetsSyncInternal(): SheetsSyncStatus {
     if (runningRef.current) return;
     runningRef.current = true;
     setStatus('exporting');
+    setSpreadsheetSelectedAt(null);
     try {
       const result = await exportToSheet();
       setLastExportedAt(result.syncedAt);
@@ -66,9 +71,44 @@ function useSheetsSyncInternal(): SheetsSyncStatus {
     if (runningRef.current) return;
     runningRef.current = true;
     setStatus('importing');
+    setSpreadsheetSelectedAt(null);
     try {
       const result = await importFromSheet();
       setLastImportedAt(result.syncedAt);
+      setError(null);
+      setStatus('idle');
+    } catch (err) {
+      setError((err as Error).message);
+      setStatus('error');
+    } finally {
+      runningRef.current = false;
+    }
+  }, []);
+
+  const selectSpreadsheet = useCallback(async () => {
+    if (runningRef.current) return;
+    runningRef.current = true;
+    setStatus('selecting');
+    try {
+      const tokenRes = await fetch('/api/auth/google/access-token', { credentials: 'include' });
+      if (!tokenRes.ok) throw new Error(await readErrorMessage(tokenRes));
+      const { accessToken } = (await tokenRes.json()) as { accessToken: string };
+
+      const spreadsheetId = await pickSpreadsheet(accessToken);
+      if (spreadsheetId == null) {
+        setStatus('idle');
+        return;
+      }
+
+      const selectRes = await fetch('/api/auth/google/select-spreadsheet', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spreadsheetId, accessToken }),
+      });
+      if (!selectRes.ok) throw new Error(await readErrorMessage(selectRes));
+
+      setSpreadsheetSelectedAt(new Date().toISOString());
       setError(null);
       setStatus('idle');
     } catch (err) {
@@ -89,6 +129,7 @@ function useSheetsSyncInternal(): SheetsSyncStatus {
     setConnectedEmail(null);
     setStatus('idle');
     setError(null);
+    setSpreadsheetSelectedAt(null);
   }, []);
 
   return {
@@ -97,9 +138,11 @@ function useSheetsSyncInternal(): SheetsSyncStatus {
     status,
     lastExportedAt,
     lastImportedAt,
+    spreadsheetSelectedAt,
     error,
     exportNow,
     importNow,
+    selectSpreadsheet,
     connect,
     disconnect,
   };

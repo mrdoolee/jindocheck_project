@@ -167,9 +167,17 @@ export interface SyncResult {
   syncedAt: string;
 }
 
+// Shared by every fetch call in this module (and re-exported for useSheetsSync.tsx's
+// Picker-related calls) so a failed request's actual server-supplied message is always
+// surfaced, not a generic status-code string.
+export async function readErrorMessage(res: Response): Promise<string> {
+  const body = (await res.json().catch(() => ({}))) as { error?: string };
+  return body.error ?? `동기화 서버 오류 (${res.status})`;
+}
+
 async function fetchSheet(apiBase: string): Promise<Record<string, unknown[][]>> {
   const res = await fetch(`${apiBase}/api/sheet`, { credentials: 'include' });
-  if (!res.ok) throw new Error(`동기화 서버 오류 (${res.status})`);
+  if (!res.ok) throw new Error(await readErrorMessage(res));
   const body = (await res.json()) as { tables: Record<string, unknown[][]> };
   return body.tables;
 }
@@ -181,7 +189,7 @@ async function pushSheet(apiBase: string, tables: Record<string, unknown[][]>): 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tables }),
   });
-  if (!res.ok) throw new Error(`동기화 서버 오류 (${res.status})`);
+  if (!res.ok) throw new Error(await readErrorMessage(res));
 }
 
 // One-directional, explicit overwrite: local -> sheet. No merge, no per-row id matching —

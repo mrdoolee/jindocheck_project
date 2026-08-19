@@ -27,7 +27,7 @@ export default function RosterList({ classId }: { classId: number | '' }) {
                   type="number"
                   defaultValue={s.number}
                   aria-label={`번호-${s.id}`}
-                  className="w-16 shrink-0"
+                  className="w-16 shrink-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   onBlur={(e) => {
                     const value = Number(e.target.value);
                     if (e.target.value.trim() !== '' && !Number.isNaN(value)) {

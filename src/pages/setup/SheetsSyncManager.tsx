@@ -10,9 +10,11 @@ export default function SheetsSyncManager() {
     status,
     lastExportedAt,
     lastImportedAt,
+    spreadsheetSelectedAt,
     error,
     exportNow,
     importNow,
+    selectSpreadsheet,
     connect,
     disconnect,
   } = useSheetsSync();
@@ -68,13 +70,13 @@ export default function SheetsSyncManager() {
           자동으로 동기화되지 않습니다. 아래 버튼을 눌러 원하는 방향으로 직접 내보내거나 불러오세요.
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={handleExport} disabled={status === 'exporting' || status === 'importing'}>
+          <Button onClick={handleExport} disabled={status !== 'idle' && status !== 'error'}>
             {status === 'exporting' ? '내보내는 중...' : '내보내기'}
           </Button>
           <Button
             variant="outline"
             onClick={handleImport}
-            disabled={status === 'exporting' || status === 'importing'}
+            disabled={status !== 'idle' && status !== 'error'}
           >
             {status === 'importing' ? '불러오는 중...' : '불러오기'}
           </Button>
@@ -84,6 +86,24 @@ export default function SheetsSyncManager() {
           {lastImportedAt && <p>마지막 불러오기: {new Date(lastImportedAt).toLocaleString('ko-KR')}</p>}
         </div>
         {status === 'error' && error && <p className="text-sm text-destructive">동기화 실패: {error}</p>}
+        <div className="border-t pt-3 space-y-2">
+          <p className="text-sm text-muted-foreground">
+            연결 해제 후 다시 연결하면 매번 새 스프레드시트가 만들어집니다. 예전에 쓰던 시트를 계속 쓰려면
+            아래에서 직접 골라 연결하세요.
+          </p>
+          <Button
+            variant="outline"
+            onClick={selectSpreadsheet}
+            disabled={status !== 'idle' && status !== 'error'}
+          >
+            {status === 'selecting' ? '선택 중...' : '다른 스프레드시트 선택'}
+          </Button>
+          {spreadsheetSelectedAt && (
+            <p className="text-xs text-muted-foreground">
+              새 스프레드시트로 전환됐습니다. 필요하면 내보내기/불러오기를 눌러주세요.
+            </p>
+          )}
+        </div>
         <div className="border-t pt-3">
           <Button variant="outline" onClick={disconnect}>
             연결 해제

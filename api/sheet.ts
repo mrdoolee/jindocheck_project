@@ -1,35 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getAccessToken, batchGetValues, batchClearValues, batchUpdateValues } from './_lib/googleSheets.js';
 import { TABLE_NAMES } from './_lib/tables.js';
-import { getCookie, getSessionSub, getUserRecord, SESSION_COOKIE_NAME } from './_lib/session.js';
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing environment variable: ${name}`);
-  return value;
-}
+import { requireSession } from './_lib/session.js';
+import { requireGoogleClientCredentials } from './_lib/env.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const sessionId = getCookie(req, SESSION_COOKIE_NAME);
-  const sub = sessionId ? await getSessionSub(sessionId) : null;
-  if (!sub) {
-    res.status(401).json({ error: '인증 실패' });
-    return;
-  }
-  const record = await getUserRecord(sub);
-  if (!record) {
-    res.status(401).json({ error: '인증 실패' });
-    return;
-  }
+  const auth = await requireSession(req, res);
+  if (!auth) return;
+  const { record } = auth;
 
-  let clientId: string, clientSecret: string;
-  try {
-    clientId = requireEnv('GOOGLE_CLIENT_ID');
-    clientSecret = requireEnv('GOOGLE_CLIENT_SECRET');
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
-    return;
-  }
+  const creds = requireGoogleClientCredentials(res);
+  if (!creds) return;
+  const { clientId, clientSecret } = creds;
 
   try {
     const accessToken = await getAccessToken(record.refreshToken, clientId, clientSecret);
@@ -48,6 +30,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
       }
       const names = TABLE_NAMES.filter((name) => body.tables![name]);
+      // Tabs are guaranteed to exist here — either from createSpreadsheet() on first
+      // connect, or from ensureSheetsExist() in select-spreadsheet.ts at pick time. No
+      // need to re-check on every export.
       await batchClearValues(spreadsheetId, names, accessToken);
       await batchUpdateValues(
         spreadsheetId,

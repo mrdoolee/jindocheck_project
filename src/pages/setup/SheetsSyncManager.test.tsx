@@ -4,12 +4,21 @@ import userEvent from '@testing-library/user-event';
 import SheetsSyncManager from './SheetsSyncManager';
 import { SheetsSyncProvider } from '@/hooks/useSheetsSync';
 import { exportToSheet, importFromSheet, getLastExportedAt, getLastImportedAt } from '../../db/sheetsSync';
+import { pickSpreadsheet } from '../../lib/googlePicker';
 
 vi.mock('../../db/sheetsSync', () => ({
   exportToSheet: vi.fn(),
   importFromSheet: vi.fn(),
   getLastExportedAt: vi.fn(() => null),
   getLastImportedAt: vi.fn(() => null),
+  readErrorMessage: vi.fn(async (res: Response) => {
+    const body = await res.json().catch(() => ({}));
+    return (body as { error?: string }).error ?? `동기화 서버 오류 (${res.status})`;
+  }),
+}));
+
+vi.mock('../../lib/googlePicker', () => ({
+  pickSpreadsheet: vi.fn(),
 }));
 
 function stubMeEndpoint(connected: boolean, email?: string) {
@@ -20,6 +29,12 @@ function stubMeEndpoint(connected: boolean, email?: string) {
         return new Response(JSON.stringify({ connected, email }), { status: 200 });
       }
       if (url === '/api/auth/disconnect' && init?.method === 'POST') {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+      if (url === '/api/auth/google/access-token') {
+        return new Response(JSON.stringify({ accessToken: 'token-abc' }), { status: 200 });
+      }
+      if (url === '/api/auth/google/select-spreadsheet' && init?.method === 'POST') {
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
       throw new Error(`unexpected fetch to ${url}`);
@@ -41,6 +56,7 @@ beforeEach(() => {
   vi.mocked(importFromSheet).mockReset();
   vi.mocked(getLastExportedAt).mockReturnValue(null);
   vi.mocked(getLastImportedAt).mockReturnValue(null);
+  vi.mocked(pickSpreadsheet).mockReset();
   vi.unstubAllGlobals();
 });
 
@@ -110,5 +126,47 @@ describe('SheetsSyncManager', () => {
     await user.click(screen.getByText('내보내기'));
 
     expect(await screen.findByText(/동기화 실패:/)).toBeInTheDocument();
+  });
+
+  it('selects a spreadsheet via Picker and shows a confirmation message', async () => {
+    stubMeEndpoint(true, 'teacher@example.com');
+    vi.mocked(pickSpreadsheet).mockResolvedValue('sheet-123');
+    const user = userEvent.setup();
+    renderManager();
+
+    await user.click(await screen.findByText('다른 스프레드시트 선택'));
+
+    expect(await screen.findByText(/새 스프레드시트로 전환됐습니다/)).toBeInTheDocument();
+  });
+
+  it('does nothing further when Picker is cancelled', async () => {
+    stubMeEndpoint(true, 'teacher@example.com');
+    vi.mocked(pickSpreadsheet).mockResolvedValue(null);
+    const user = userEvent.setup();
+    renderManager();
+
+    await user.click(await screen.findByText('다른 스프레드시트 선택'));
+
+    await waitFor(() => {
+      expect(pickSpreadsheet).toHaveBeenCalled();
+    });
+    expect(screen.queryByText(/새 스프레드시트로 전환됐습니다/)).not.toBeInTheDocument();
+  });
+
+  it('clears the switch-confirmation message after the next export', async () => {
+    stubMeEndpoint(true, 'teacher@example.com');
+    vi.mocked(pickSpreadsheet).mockResolvedValue('sheet-123');
+    vi.mocked(exportToSheet).mockResolvedValue({ syncedAt: '2026-08-15T00:00:00.000Z' });
+    window.confirm = vi.fn(() => true);
+    const user = userEvent.setup();
+    renderManager();
+
+    await user.click(await screen.findByText('다른 스프레드시트 선택'));
+    expect(await screen.findByText(/새 스프레드시트로 전환됐습니다/)).toBeInTheDocument();
+
+    await user.click(screen.getByText('내보내기'));
+    await waitFor(() => {
+      expect(screen.queryByText(/새 스프레드시트로 전환됐습니다/)).not.toBeInTheDocument();
+    });
   });
 });

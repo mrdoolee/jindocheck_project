@@ -81,6 +81,27 @@ export async function deleteSession(sessionId: string): Promise<void> {
   await kv.del(`session:${sessionId}`);
 }
 
+// Shared session-auth gate for every data/token endpoint (api/sheet.ts, access-token.ts,
+// select-spreadsheet.ts): resolves the session cookie to a Google account record, or writes
+// a 401 and returns null. Callers must `return` immediately when this returns null.
+export async function requireSession(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<{ sub: string; record: GoogleUserRecord } | null> {
+  const sessionId = getCookie(req, SESSION_COOKIE_NAME);
+  const sub = sessionId ? await getSessionSub(sessionId) : null;
+  if (!sub) {
+    res.status(401).json({ error: '인증 실패' });
+    return null;
+  }
+  const record = await getUserRecord(sub);
+  if (!record) {
+    res.status(401).json({ error: '인증 실패' });
+    return null;
+  }
+  return { sub, record };
+}
+
 export async function getUserRecord(sub: string): Promise<GoogleUserRecord | null> {
   const raw = await kv.get<GoogleUserRecord>(`google-user:${sub}`);
   if (!raw) return null;

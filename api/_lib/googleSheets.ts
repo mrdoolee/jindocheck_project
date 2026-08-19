@@ -104,6 +104,23 @@ export async function batchUpdateValues(
   });
 }
 
+export async function ensureSheetsExist(
+  spreadsheetId: string,
+  sheetTitles: string[],
+  accessToken: string
+): Promise<void> {
+  const meta = await sheetsFetch(`/${spreadsheetId}?fields=sheets.properties.title`, accessToken);
+  const existingTitles = new Set(
+    ((meta.sheets as { properties: { title: string } }[]) ?? []).map((s) => s.properties.title)
+  );
+  const missing = sheetTitles.filter((t) => !existingTitles.has(t));
+  if (missing.length === 0) return;
+  await sheetsFetch(`/${spreadsheetId}:batchUpdate`, accessToken, {
+    method: 'POST',
+    body: JSON.stringify({ requests: missing.map((title) => ({ addSheet: { properties: { title } } })) }),
+  });
+}
+
 export async function createSpreadsheet(
   title: string,
   sheetTitles: string[],
