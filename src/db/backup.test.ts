@@ -13,6 +13,7 @@ beforeEach(async () => {
     db.attendance.clear(),
     db.stickers.clear(),
     db.records.clear(),
+    db.timetableSettings.clear(),
   ]);
 });
 
@@ -38,6 +39,33 @@ describe('backup', () => {
     expect(classes[0].name).toBe('1반');
     expect(students).toHaveLength(1);
     expect(students[0].name).toBe('홍길동');
+  });
+
+  it('round-trips timetableSettings', async () => {
+    await db.timetableSettings.put({ id: 1, schoolCode: '39286', teacherIndex: 1, teacherName: '김민수' });
+
+    const payload = await exportData();
+    expect(payload.data.timetableSettings).toHaveLength(1);
+
+    await db.timetableSettings.clear();
+    await importData(payload);
+
+    const settings = await db.timetableSettings.toArray();
+    expect(settings).toEqual([{ id: 1, schoolCode: '39286', teacherIndex: 1, teacherName: '김민수' }]);
+  });
+
+  it('leaves timetableSettings untouched when the payload omits it (Sheets-import shape)', async () => {
+    await db.timetableSettings.put({ id: 1, schoolCode: '39286', teacherIndex: 1, teacherName: '김민수' });
+    const classId = await createClass('1반');
+    await addStudent(classId, 1, '홍길동');
+
+    const payload = await exportData();
+    // sheetsSync.ts's importFromSheet() never sets this key at all — simulate that shape.
+    const { timetableSettings: _omit, ...dataWithoutTimetable } = payload.data;
+    await importData({ ...payload, data: dataWithoutTimetable });
+
+    const settings = await db.timetableSettings.toArray();
+    expect(settings).toEqual([{ id: 1, schoolCode: '39286', teacherIndex: 1, teacherName: '김민수' }]);
   });
 
   it('rejects an unsupported version', async () => {

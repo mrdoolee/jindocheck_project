@@ -116,6 +116,15 @@ describe('Sidebar mobile drawer', () => {
   });
 });
 
+describe('Sidebar navigation', () => {
+  it('shows a 시간표 link right below 홈', () => {
+    renderSidebar();
+    const links = screen.getAllByRole('link').map((el) => el.textContent);
+    const homeIdx = links.findIndex((t) => t?.includes('홈'));
+    expect(links[homeIdx + 1]).toContain('시간표');
+  });
+});
+
 describe('Sidebar bottom section', () => {
   it('has no data-export shortcut', () => {
     renderSidebar();

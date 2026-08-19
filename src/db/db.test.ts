@@ -6,7 +6,7 @@ describe('AppDatabase', () => {
     await db.open();
     const names = db.tables.map((t) => t.name).sort();
     expect(names).toEqual(
-      ['attendance', 'classes', 'curriculum', 'progress', 'records', 'stickers', 'students'].sort()
+      ['attendance', 'classes', 'curriculum', 'progress', 'records', 'stickers', 'students', 'timetableSettings'].sort()
     );
   });
 });

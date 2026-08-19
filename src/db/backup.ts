@@ -11,23 +11,31 @@ export interface BackupPayload {
     attendance: unknown[];
     stickers: unknown[];
     records: unknown[];
+    // Optional: a device-local preference (which school/teacher this device cares about),
+    // not classroom data. sheetsSync.ts's importFromSheet() builds a payload that never sets
+    // this key at all (Google Sheets only carries the 7 TABLE_NAMES tables) — importData()
+    // must leave this table untouched in that case, not wipe it, so "불러오기" from Sheets
+    // doesn't reset a setting that has nothing to do with Sheets sync.
+    timetableSettings?: unknown[];
   };
 }
 
 export async function exportData(): Promise<BackupPayload> {
-  const [classes, students, curriculum, progress, attendance, stickers, records] = await Promise.all([
-    db.classes.toArray(),
-    db.students.toArray(),
-    db.curriculum.toArray(),
-    db.progress.toArray(),
-    db.attendance.toArray(),
-    db.stickers.toArray(),
-    db.records.toArray(),
-  ]);
+  const [classes, students, curriculum, progress, attendance, stickers, records, timetableSettings] =
+    await Promise.all([
+      db.classes.toArray(),
+      db.students.toArray(),
+      db.curriculum.toArray(),
+      db.progress.toArray(),
+      db.attendance.toArray(),
+      db.stickers.toArray(),
+      db.records.toArray(),
+      db.timetableSettings.toArray(),
+    ]);
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
-    data: { classes, students, curriculum, progress, attendance, stickers, records },
+    data: { classes, students, curriculum, progress, attendance, stickers, records, timetableSettings },
   };
 }
 
@@ -35,9 +43,10 @@ export async function importData(payload: BackupPayload): Promise<void> {
   if (payload.version !== 1) {
     throw new Error(`지원하지 않는 백업 버전입니다: ${payload.version}`);
   }
+  const hasTimetableSettings = payload.data.timetableSettings !== undefined;
   await db.transaction(
     'rw',
-    [db.classes, db.students, db.curriculum, db.progress, db.attendance, db.stickers, db.records],
+    [db.classes, db.students, db.curriculum, db.progress, db.attendance, db.stickers, db.records, db.timetableSettings],
     async () => {
       await Promise.all([
         db.classes.clear(),
@@ -47,6 +56,7 @@ export async function importData(payload: BackupPayload): Promise<void> {
         db.attendance.clear(),
         db.stickers.clear(),
         db.records.clear(),
+        hasTimetableSettings ? db.timetableSettings.clear() : Promise.resolve(),
       ]);
       await Promise.all([
         db.classes.bulkAdd(payload.data.classes as never[]),
@@ -56,6 +66,7 @@ export async function importData(payload: BackupPayload): Promise<void> {
         db.attendance.bulkAdd(payload.data.attendance as never[]),
         db.stickers.bulkAdd(payload.data.stickers as never[]),
         db.records.bulkAdd(payload.data.records as never[]),
+        hasTimetableSettings ? db.timetableSettings.bulkAdd(payload.data.timetableSettings as never[]) : Promise.resolve(),
       ]);
     }
   );

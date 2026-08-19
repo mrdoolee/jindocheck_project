@@ -7,6 +7,7 @@ import type {
   AttendanceRecord,
   StickerRecord,
   NoteRecord,
+  TimetableSettings,
 } from './types';
 export class AppDatabase extends Dexie {
   classes!: Table<ClassRecord, number>;
@@ -16,6 +17,7 @@ export class AppDatabase extends Dexie {
   attendance!: Table<AttendanceRecord, number>;
   stickers!: Table<StickerRecord, number>;
   records!: Table<NoteRecord, number>;
+  timetableSettings!: Table<TimetableSettings, number>;
 
   constructor() {
     super('classroom-tracker');
@@ -52,6 +54,10 @@ export class AppDatabase extends Dexie {
           await Promise.all(rows.map((r) => tx.table(name).update(r.id, { updatedAt: now })));
         }
       });
+
+    this.version(5).stores({
+      timetableSettings: 'id',
+    });
 
     // Auto-stamp updatedAt on every write, but never override a caller-supplied value —
     // the Sheets-sync import path (src/db/sheetsSync.ts) writes records with an explicit

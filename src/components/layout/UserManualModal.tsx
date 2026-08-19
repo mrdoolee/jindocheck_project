@@ -67,6 +67,14 @@ export default function UserManualModal({ open, onClose }: { open: boolean; onCl
             </p>
           </section>
           <section>
+            <h3 className="mb-1 font-semibold">시간표 (선택)</h3>
+            <p>
+              왼쪽 메뉴의 "🕐 시간표"는 컴시간알리미 시간표를 앱 안에서 보여줍니다. 설정 &gt; 시간표 설정에서
+              학교코드와 교사를 먼저 등록하면 기본으로 뜨고, 페이지 아래쪽에서 다른 학년/반 시간표도 조회할 수
+              있습니다. 계정 연결 없이 쓸 수 있고, 자동 새로고침은 되지 않습니다.
+            </p>
+          </section>
+          <section>
             <h3 className="mb-1 font-semibold">더 자세한 내용</h3>
             <p>
               스프레드시트의 각 탭·열이 앱의 어떤 데이터에 대응하는지 등 더 상세한 내용은{' '}

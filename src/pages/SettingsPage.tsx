@@ -5,6 +5,7 @@ import CurriculumPage from './setup/CurriculumPage';
 import RosterPage from './setup/RosterPage';
 import BackupPage from './setup/BackupPage';
 import SheetsSyncPage from './setup/SheetsSyncPage';
+import TimetableSettingsPage from './setup/TimetableSettingsPage';
 
 const TABS = [
   { to: 'classes', label: '반 관리' },
@@ -12,6 +13,7 @@ const TABS = [
   { to: 'roster', label: '명단 관리' },
   { to: 'backup', label: '백업' },
   { to: 'sheets', label: 'Google 시트' },
+  { to: 'timetable', label: '시간표 설정' },
 ];
 
 export default function SettingsPage() {
@@ -46,6 +48,7 @@ export default function SettingsPage() {
         <Route path="roster" element={<RosterPage />} />
         <Route path="backup" element={<BackupPage />} />
         <Route path="sheets" element={<SheetsSyncPage />} />
+        <Route path="timetable" element={<TimetableSettingsPage />} />
       </Routes>
     </div>
   );

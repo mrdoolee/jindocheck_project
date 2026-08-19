@@ -70,6 +70,13 @@ export interface NoteRecord {
   updatedAt?: string;
 }
 
+export interface TimetableSettings {
+  id: number; // always 1 — single-row settings
+  schoolCode: string;
+  teacherIndex: number;
+  teacherName: string;
+}
+
 export type EntryKind = 'attendance' | 'sticker' | 'note';
 
 export interface Entry {

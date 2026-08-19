@@ -57,6 +57,9 @@ export default function Sidebar({ open = false, onClose = () => {} }: { open?: b
           <NavLink to="/" end onClick={closeOnMobileNav} className={navItemClass}>
             🏠 홈
           </NavLink>
+          <NavLink to="/timetable" onClick={closeOnMobileNav} className={navItemClass}>
+            🕐 시간표
+          </NavLink>
           {classes.map((c) => (
             <NavLink key={c.id} to={`/class/${c.id}`} onClick={closeOnMobileNav} className={navItemClass}>
               🎒 {c.name}
