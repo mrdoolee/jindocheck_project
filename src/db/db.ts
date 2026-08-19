@@ -59,6 +59,17 @@ export class AppDatabase extends Dexie {
       timetableSettings: 'id',
     });
 
+    this.version(6)
+      .stores({
+        students: '++id, classId, number, order',
+      })
+      .upgrade(async (tx) => {
+        // Default order = number, so the roster keeps showing in number order until a
+        // teacher explicitly drags to customize it — see students.ts#addStudent/resetStudentOrder.
+        const students = await tx.table('students').toArray();
+        await Promise.all(students.map((s) => tx.table('students').update(s.id, { order: s.number })));
+      });
+
     // Auto-stamp updatedAt on every write, but never override a caller-supplied value —
     // the Sheets-sync import path (src/db/sheetsSync.ts) writes records with an explicit
     // updatedAt taken from the sheet, and that timestamp should reflect when the sheet row

@@ -52,6 +52,22 @@ describe('SeatingTab', () => {
     expect(studentB?.seatCol).toBe(0);
   });
 
+  it('unseats a student when the × button is clicked', async () => {
+    const studentId = await db.students.add({ classId: 1, number: 1, name: '홍길동', seatRow: 0, seatCol: 0 });
+    const user = userEvent.setup();
+    render(<SeatingTab classId={1} />);
+
+    await screen.findByText('홍길동');
+    await user.click(screen.getByLabelText('홍길동 자리 비우기'));
+
+    await waitFor(async () => {
+      const student = await db.students.get(studentId);
+      expect(student?.seatRow).toBeNull();
+      expect(student?.seatCol).toBeNull();
+    });
+    expect(await screen.findByText('1번 홍길동')).toBeInTheDocument(); // now shown in 미배치 학생
+  });
+
   it('imports seat placements from an uploaded backup file, matching by student number', async () => {
     const student14Id = await db.students.add({ classId: 1, number: 14, name: '학생14', seatRow: null, seatCol: null });
     const student2Id = await db.students.add({ classId: 1, number: 2, name: '학생2', seatRow: 3, seatCol: 3 });

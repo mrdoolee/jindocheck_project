@@ -11,9 +11,9 @@ const TABS = [
   { to: 'classes', label: '반 관리' },
   { to: 'curriculum', label: '진도표 관리' },
   { to: 'roster', label: '명단 관리' },
+  { to: 'timetable', label: '시간표 설정' },
   { to: 'backup', label: '백업' },
   { to: 'sheets', label: 'Google 시트' },
-  { to: 'timetable', label: '시간표 설정' },
 ];
 
 export default function SettingsPage() {

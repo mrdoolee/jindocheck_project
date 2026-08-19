@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { listStudents, updateStudent, deleteStudent } from '../../db/students';
+import { listStudents, updateStudent, deleteStudent, reorderStudents, resetStudentOrder } from '../../db/students';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,13 +15,47 @@ export default function RosterList({ classId }: { classId: number | '' }) {
     );
   }
 
+  const handleDrop = (e: React.DragEvent, targetId: number) => {
+    const draggingId = Number(e.dataTransfer.getData('text/plain'));
+    if (!draggingId || draggingId === targetId) return;
+    const ids = students.map((s) => s.id!);
+    const fromIndex = ids.indexOf(draggingId);
+    const toIndex = ids.indexOf(targetId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    ids.splice(fromIndex, 1);
+    ids.splice(toIndex, 0, draggingId);
+    reorderStudents(ids);
+  };
+
   return (
     <Card>
       <CardContent className="space-y-4 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">학생을 드래그하면 순서를 바꿀 수 있습니다.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => resetStudentOrder(classId)}
+            disabled={students.length === 0}
+          >
+            초기화
+          </Button>
+        </div>
         <ul className="divide-y divide-border rounded-md border border-border">
           {students.map((s) => (
-            <li key={s.id} className="flex flex-col gap-2 p-3">
+            <li
+              key={s.id}
+              draggable
+              onDragStart={(e) => e.dataTransfer.setData('text/plain', String(s.id))}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleDrop(e, s.id!)}
+              className="flex cursor-grab flex-col gap-2 p-3 active:cursor-grabbing"
+            >
               <div className="flex items-center gap-2">
+                <span aria-hidden className="shrink-0 text-muted-foreground">
+                  ⠿
+                </span>
                 <Input
                   key={`number-${s.id}-${s.number}`}
                   type="number"

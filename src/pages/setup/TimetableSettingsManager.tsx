@@ -50,6 +50,7 @@ export default function TimetableSettingsManager() {
         teacherIndex: teacher.index,
         teacherName: teacher.name,
       });
+      window.alert('저장되었습니다.');
     } finally {
       setSaving(false);
     }

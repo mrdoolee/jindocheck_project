@@ -158,13 +158,26 @@ export default function SeatingTab({ classId }: { classId: number }) {
                     className="flex h-14 items-center justify-center rounded-md border border-dashed border-border bg-secondary/40 text-center transition-colors"
                   >
                     {student && (
-                      <div
-                        draggable
-                        onDragStart={(e) => e.dataTransfer.setData('text/plain', String(student.id))}
-                        className="flex w-full cursor-grab select-none flex-col items-center rounded-md bg-primary px-1 py-1 leading-tight text-primary-foreground shadow-sm active:cursor-grabbing"
-                      >
-                        <span className="text-[11px]">{student.number}번</span>
-                        <span className="text-xs font-medium">{student.name}</span>
+                      <div className="relative w-full">
+                        <div
+                          draggable
+                          onDragStart={(e) => e.dataTransfer.setData('text/plain', String(student.id))}
+                          className="flex w-full cursor-grab select-none flex-col items-center rounded-md bg-primary px-1 py-1 leading-tight text-primary-foreground shadow-sm active:cursor-grabbing"
+                        >
+                          <span className="text-[11px]">{student.number}번</span>
+                          <span className="text-xs font-medium">{student.name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label={`${student.name} 자리 비우기`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateSeat(student.id!, null, null);
+                          }}
+                          className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] leading-none text-destructive shadow ring-1 ring-border hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          ×
+                        </button>
                       </div>
                     )}
                   </div>

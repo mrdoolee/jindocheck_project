@@ -16,6 +16,7 @@ export interface StudentRecord {
   role?: string | null;
   seatRow: number | null;
   seatCol: number | null;
+  order?: number;
   updatedAt?: string;
 }
 

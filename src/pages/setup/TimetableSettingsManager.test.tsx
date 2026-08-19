@@ -30,6 +30,8 @@ describe('TimetableSettingsManager', () => {
         { index: 2, name: '이영희' },
       ],
     });
+    const alertSpy = vi.fn();
+    window.alert = alertSpy;
     const user = userEvent.setup();
     render(<TimetableSettingsManager />);
 
@@ -40,6 +42,7 @@ describe('TimetableSettingsManager', () => {
     await user.selectOptions(screen.getByLabelText('교사 선택'), '2');
     await user.click(screen.getByText('저장'));
 
+    expect(alertSpy).toHaveBeenCalledWith('저장되었습니다.');
     await waitFor(async () => {
       expect(await db.timetableSettings.get(1)).toEqual({
         id: 1,
