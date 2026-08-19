@@ -67,11 +67,6 @@ export default function SheetsSyncManager() {
         <p className="text-sm text-muted-foreground">
           연결됨: <span className="font-medium text-foreground">{connectedEmail}</span>
         </p>
-        <p className="text-sm text-muted-foreground">
-          구글 스프레드시트로 데이터를 내보내거나 불러옵니다.
-          <br />
-          자동으로 동기화되지 않으며, 내보내기/불러오기 각각 선택한 방향의 데이터로 반대쪽을 완전히 덮어씁니다.
-        </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={handleExport} disabled={status !== 'idle' && status !== 'error'}>
             {status === 'exporting' ? '내보내는 중...' : '내보내기'}
