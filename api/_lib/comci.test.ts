@@ -103,8 +103,8 @@ describe('getTeacherTimetable (변경알림=1, "> prefix" change detection)', ()
 
   it("computes the teacher's own weekly schedule across different classes", () => {
     const grid = getTeacherTimetable(data, 1); // 김민수
-    expect(grid[0][0]).toEqual({ subject: '체육', person: '1학년 1반', changed: true }); // mon p1
-    expect(grid[0][1]).toEqual({ subject: '과학', person: '2학년 1반', changed: false }); // tue p1
+    expect(grid[0][0]).toEqual({ subject: '체육', person: '1-1', changed: true }); // mon p1
+    expect(grid[0][1]).toEqual({ subject: '과학', person: '2-1', changed: false }); // tue p1
   });
 
   it('returns null where the teacher has no class that period', () => {
@@ -117,7 +117,7 @@ describe('getTeacherTimetable (변경알림=0, rebuilt-from-자료481 baseline d
   it('flags a change by comparing against the inverted class-grid baseline', () => {
     const data = buildFixture(0);
     const grid = getTeacherTimetable(data, 1);
-    expect(grid[0][0]).toEqual({ subject: '체육', person: '1학년 1반', changed: true });
-    expect(grid[0][1]).toEqual({ subject: '과학', person: '2학년 1반', changed: false });
+    expect(grid[0][0]).toEqual({ subject: '체육', person: '1-1', changed: true });
+    expect(grid[0][1]).toEqual({ subject: '과학', person: '2-1', changed: false });
   });
 });

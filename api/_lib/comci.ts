@@ -28,7 +28,7 @@ export interface ComciSchoolData {
 
 export interface TimetableCell {
   subject: string;
-  person: string; // teacher name (class view) or "N학년 M반" (teacher view)
+  person: string; // teacher name (class view) or "N-M" grade-class (teacher view)
   changed: boolean;
 }
 
@@ -247,7 +247,7 @@ export function getTeacherTimetable(data: ComciSchoolData, teacherIndex: number)
       }
       const grade = Math.floor(classCode / 100);
       const classNum = classCode % 100;
-      row.push({ subject, person: `${grade}학년 ${classNum}반`, changed });
+      row.push({ subject, person: `${grade}-${classNum}`, changed });
     }
     grid.push(row);
   }

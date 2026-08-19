@@ -21,6 +21,9 @@ export default function Shell({ children }: { children: ReactNode }) {
             <span className="text-sm font-semibold">진도 췍</span>
           </header>
           <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+          <footer className="shrink-0 border-t border-border px-3 py-2 text-center text-xs text-muted-foreground">
+            © 2026 Designed &amp; Developed by 두리쌤. All rights reserved.
+          </footer>
         </div>
       </div>
     </SheetsSyncProvider>

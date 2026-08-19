@@ -31,7 +31,6 @@ export default function HomePage() {
                 <CardHeader>
                   <CardTitle className="text-lg">{c.name}</CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">진도체크·출결확인·누가기록·자리배치표</CardContent>
               </Card>
             </Link>
           ))}

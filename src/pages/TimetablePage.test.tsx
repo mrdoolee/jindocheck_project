@@ -11,10 +11,10 @@ const TEACHER_RESPONSE = {
   gradeClassCounts: [2, 1],
   teacherTimetable: [
     [
-      { subject: '체육', person: '1학년 1반', changed: true },
+      { subject: '체육', person: '1-1', changed: true },
       null,
     ],
-    [null, { subject: '과학', person: '2학년 1반', changed: false }],
+    [null, { subject: '과학', person: '2-1', changed: false }],
   ],
 };
 
@@ -51,7 +51,7 @@ describe('TimetablePage', () => {
     renderPage();
 
     expect(await screen.findByText('체육')).toBeInTheDocument();
-    expect(screen.getByText('1학년 1반')).toBeInTheDocument();
+    expect(screen.getByText('1-1')).toBeInTheDocument();
     expect(screen.getByText('과학')).toBeInTheDocument();
     expect(screen.getByText('체육').closest('td')).toHaveClass('bg-yellow-100');
     expect(screen.getByText('과학').closest('td')).not.toHaveClass('bg-yellow-100');
