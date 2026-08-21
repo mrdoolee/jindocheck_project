@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import Sidebar from './Sidebar';
+import FooterCreditModal from './FooterCreditModal';
 import { SheetsSyncProvider } from '@/hooks/useSheetsSync';
 
 export default function Shell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia('(min-width: 768px)').matches);
+  const [creditOpen, setCreditOpen] = useState(false);
 
   return (
     <SheetsSyncProvider>
@@ -21,11 +23,20 @@ export default function Shell({ children }: { children: ReactNode }) {
             <span className="text-sm font-semibold">진도 췍</span>
           </header>
           <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
-          <footer className="shrink-0 border-t border-border px-3 py-2 text-center text-xs text-muted-foreground">
-            © 2026 Designed &amp; Developed by 두리쌤. All rights reserved.
+          <footer className="shrink-0 border-t border-border px-3 py-3 text-center text-xs text-muted-foreground">
+            © 2026 Designed &amp; Developed by{' '}
+            <button
+              type="button"
+              onClick={() => setCreditOpen(true)}
+              className="underline underline-offset-2 hover:no-underline"
+            >
+              두리쌤
+            </button>
+            . All rights reserved.
           </footer>
         </div>
       </div>
+      <FooterCreditModal open={creditOpen} onClose={() => setCreditOpen(false)} />
     </SheetsSyncProvider>
   );
 }
