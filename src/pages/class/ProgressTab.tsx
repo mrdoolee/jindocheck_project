@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { setProgress } from '../../db/progress';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 function SubjectProgress({
@@ -83,6 +85,12 @@ function SubjectProgress({
 export default function ProgressTab({ classId }: { classId: number }) {
   const classSubjects = useLiveQuery(() => db.classSubjects.where('classId').equals(classId).toArray(), [classId]);
   const subjects = useLiveQuery(() => db.subjects.orderBy('order').toArray(), []);
+  const [activeSubjectId, setActiveSubjectId] = useState<number | null>(null);
+
+  // ClassPage doesn't remount ProgressTab when switching classes on the same tab (same route,
+  // just a new classId prop), so a stale selection from the previous class would otherwise
+  // linger — reset back to "let the fallback pick the first subject" whenever classId changes.
+  useEffect(() => setActiveSubjectId(null), [classId]);
 
   if (!classSubjects || !subjects) return null;
 
@@ -98,11 +106,26 @@ export default function ProgressTab({ classId }: { classId: number }) {
     );
   }
 
+  const selected = mySubjects.find((s) => s.id === activeSubjectId) ?? mySubjects[0];
+
   return (
     <div className="space-y-4">
-      {mySubjects.map((s) => (
-        <SubjectProgress key={s.id} classId={classId} subjectId={s.id!} subjectName={s.name} />
-      ))}
+      {mySubjects.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {mySubjects.map((s) => (
+            <Button
+              key={s.id}
+              type="button"
+              size="sm"
+              variant={selected.id === s.id ? 'default' : 'outline'}
+              onClick={() => setActiveSubjectId(s.id!)}
+            >
+              {s.name}
+            </Button>
+          ))}
+        </div>
+      )}
+      <SubjectProgress key={selected.id} classId={classId} subjectId={selected.id!} subjectName={selected.name} />
     </div>
   );
 }

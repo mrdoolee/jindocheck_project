@@ -67,22 +67,45 @@ describe('ProgressTab', () => {
         <ProgressTab classId={2} />
       </MemoryRouter>
     );
-    const checkbox = await screen.findByRole('checkbox');
-    expect(checkbox).not.toBeChecked();
+    // The checkbox DOM node persists across this rerender (same subject, same key), so
+    // findByRole resolves instantly with the still-checked node from class 1 — it only waits
+    // for the element to exist, not for the classId-scoped progress live-query to re-resolve.
+    // waitFor is required here to avoid a race against that re-resolution.
+    await waitFor(() => {
+      expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
   });
 
-  it('shows one card per subject when a class has more than one', async () => {
+  it('shows a subject picker and only one subject at a time when a class has more than one', async () => {
     const mathId = await linkSubject(1);
     const englishId = await db.subjects.add({ name: '영어', order: 1, createdAt: new Date().toISOString() });
     await db.classSubjects.add({ classId: 1, subjectId: englishId });
     await addCurriculumItem(mathId, '수학 1단원', '1차시');
     await addCurriculumItem(englishId, '영어 1단원', '1차시');
 
+    const user = userEvent.setup();
     renderProgressTab(1);
 
-    expect(await screen.findByText('수학')).toBeInTheDocument();
-    expect(await screen.findByText('영어')).toBeInTheDocument();
-    expect(await screen.findAllByRole('checkbox')).toHaveLength(2);
+    // first subject shown by default; only its item is visible
+    expect(await screen.findByText('수학 1단원')).toBeInTheDocument();
+    expect(screen.queryByText('영어 1단원')).not.toBeInTheDocument();
+    expect(await screen.findAllByRole('checkbox')).toHaveLength(1);
+
+    await user.click(screen.getByRole('button', { name: '영어' }));
+
+    expect(await screen.findByText('영어 1단원')).toBeInTheDocument();
+    expect(screen.queryByText('수학 1단원')).not.toBeInTheDocument();
+    expect(await screen.findAllByRole('checkbox')).toHaveLength(1);
+  });
+
+  it('does not show a subject picker when the class has only one subject', async () => {
+    const subjectId = await linkSubject(1);
+    await addCurriculumItem(subjectId, '1단원', '1차시');
+
+    renderProgressTab(1);
+
+    await screen.findByText('1단원');
+    expect(screen.queryByRole('button', { name: '수학' })).not.toBeInTheDocument();
   });
 
   it('displays the actual persisted date, not today\'s date', async () => {
