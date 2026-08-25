@@ -16,6 +16,7 @@ describe('AppDatabase', () => {
         'stickers',
         'students',
         'subjects',
+        'timetableEntries',
         'timetableSettings',
       ].sort()
     );

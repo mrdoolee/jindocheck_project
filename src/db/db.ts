@@ -10,6 +10,7 @@ import type {
   StickerRecord,
   NoteRecord,
   TimetableSettings,
+  ManualTimetableEntry,
 } from './types';
 export class AppDatabase extends Dexie {
   classes!: Table<ClassRecord, number>;
@@ -22,6 +23,7 @@ export class AppDatabase extends Dexie {
   stickers!: Table<StickerRecord, number>;
   records!: Table<NoteRecord, number>;
   timetableSettings!: Table<TimetableSettings, number>;
+  timetableEntries!: Table<ManualTimetableEntry, number>;
 
   constructor() {
     super('classroom-tracker');
@@ -99,6 +101,15 @@ export class AppDatabase extends Dexie {
         );
       });
 
+    // Manual timetable entry (for teachers whose school doesn't use comci.net): one row per
+    // (day, period) cell the teacher has filled in. Separate from timetableSettings — this is
+    // real content worth backing up (local JSON backup + Google Sheets), unlike
+    // timetableSettings' mode/schoolCode/periodCount, which stay device-local by design (see
+    // the "시간표" section of CLAUDE.md).
+    this.version(8).stores({
+      timetableEntries: '++id, [day+period]',
+    });
+
     // Auto-stamp updatedAt on every write, but never override a caller-supplied value —
     // the Sheets-sync import path (src/db/sheetsSync.ts) writes records with an explicit
     // updatedAt taken from the sheet, and that timestamp should reflect when the sheet row
@@ -113,6 +124,7 @@ export class AppDatabase extends Dexie {
       this.attendance,
       this.stickers,
       this.records,
+      this.timetableEntries,
     ]) {
       table.hook('creating', function (_primKey, obj) {
         const record = obj as { updatedAt?: string };

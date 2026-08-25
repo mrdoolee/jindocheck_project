@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/db/db';
 import { getTimetableSettings } from '@/db/timetableSettings';
+import type { TimetableSettings } from '@/db/types';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,6 +81,42 @@ function TimetableGridView({ periods, grid }: { periods: string[]; grid: Timetab
   );
 }
 
+function ManualTimetableView({ settings }: { settings: TimetableSettings }) {
+  const entries = useLiveQuery(() => db.timetableEntries.toArray(), []) ?? [];
+  const periodCount = settings.periodCount ?? 7;
+
+  const grid: TimetableGrid = Array.from({ length: periodCount }, (_, i) => {
+    const period = i + 1;
+    return DAY_LABELS.map((_, day) => {
+      const entry = entries.find((e) => e.day === day && e.period === period);
+      if (!entry || (!entry.subject && !entry.note)) return null;
+      return { subject: entry.subject, person: entry.note, changed: false };
+    });
+  });
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">시간표</h1>
+          <p className="text-sm text-muted-foreground">직접 입력한 시간표입니다.</p>
+        </div>
+        <Button variant="outline" asChild>
+          <Link to="/setup/timetable">수정하기</Link>
+        </Button>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">내 시간표</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TimetableGridView periods={[]} grid={grid} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function TimetablePage() {
   // useLiveQuery returns undefined both while still loading AND once resolved if the query
   // function itself resolves to undefined — coerce "no row found" to null so the two are
@@ -90,7 +128,7 @@ export default function TimetablePage() {
   >({ status: 'loading' });
 
   const loadTeacherTimetable = async () => {
-    if (!settings) return;
+    if (!settings || !settings.schoolCode || settings.teacherIndex === undefined) return;
     setTeacherState({ status: 'loading' });
     try {
       const data = await fetchTimetable({ schoolCode: settings.schoolCode, teacherIndex: String(settings.teacherIndex) });
@@ -102,10 +140,11 @@ export default function TimetablePage() {
 
   // Depend on the primitive fields, not the useLiveQuery object itself — that object gets a
   // new reference on every live-query re-resolution even when its content hasn't changed,
-  // which would otherwise re-fetch comci.net on every unrelated Dexie write.
+  // which would otherwise re-fetch comci.net on every unrelated Dexie write. Manual mode has
+  // no comci fields to fetch with, so skip entirely rather than firing a doomed request.
   useEffect(() => {
-    if (settings) loadTeacherTimetable();
-  }, [settings?.schoolCode, settings?.teacherIndex]);
+    if (settings && settings.mode !== 'manual') loadTeacherTimetable();
+  }, [settings?.mode, settings?.schoolCode, settings?.teacherIndex]);
 
   const [grade, setGrade] = useState('');
   const [classNum, setClassNum] = useState('');
@@ -114,7 +153,7 @@ export default function TimetablePage() {
   >({ status: 'idle' });
 
   const handleLoadClassTimetable = async () => {
-    if (!settings || !grade || !classNum) return;
+    if (!settings || !settings.schoolCode || !grade || !classNum) return;
     setClassState({ status: 'loading' });
     try {
       const data = await fetchTimetable({ schoolCode: settings.schoolCode, grade, classNum });
@@ -136,11 +175,15 @@ export default function TimetablePage() {
             <Link to="/setup/timetable" className="font-medium text-primary hover:underline">
               설정 &gt; 시간표 설정
             </Link>
-            에서 학교코드와 교사를 먼저 등록하세요.
+            에서 학교코드와 교사를 먼저 등록하거나, 직접 입력을 선택해 시간표를 입력하세요.
           </CardContent>
         </Card>
       </div>
     );
+  }
+
+  if (settings.mode === 'manual') {
+    return <ManualTimetableView settings={settings} />;
   }
 
   const periods = teacherState.status === 'idle' ? teacherState.data.periods ?? [] : [];

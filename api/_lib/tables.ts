@@ -8,6 +8,7 @@ export const TABLE_NAMES = [
   'attendance',
   'stickers',
   'records',
+  'timetableEntries',
 ] as const;
 
 export type TableName = (typeof TABLE_NAMES)[number];

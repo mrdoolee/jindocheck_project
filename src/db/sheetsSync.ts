@@ -10,6 +10,7 @@ export const TABLE_NAMES = [
   'attendance',
   'stickers',
   'records',
+  'timetableEntries',
 ] as const;
 
 export type TableName = (typeof TABLE_NAMES)[number];
@@ -110,6 +111,17 @@ const SHEET_SCHEMA: Record<TableName, TableSchema> = {
       date: 'string',
       type: 'string',
       content: 'string',
+      updatedAt: 'string',
+    },
+  },
+  timetableEntries: {
+    columns: ['id', 'day', 'period', 'subject', 'note', 'updatedAt'],
+    types: {
+      id: 'number',
+      day: 'number',
+      period: 'number',
+      subject: 'string',
+      note: 'string',
       updatedAt: 'string',
     },
   },

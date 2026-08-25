@@ -87,11 +87,29 @@ export interface NoteRecord {
   updatedAt?: string;
 }
 
+export type TimetableMode = 'comci' | 'manual';
+
 export interface TimetableSettings {
   id: number; // always 1 — single-row settings
-  schoolCode: string;
-  teacherIndex: number;
-  teacherName: string;
+  // Missing/undefined means 'comci' — every row saved before manual mode existed predates
+  // this field, and the comci lookup flow's own save call still omits it (see
+  // TimetableSettingsManager.tsx) so its existing tests keep asserting an exact object shape.
+  mode?: TimetableMode;
+  // comci mode only:
+  schoolCode?: string;
+  teacherIndex?: number;
+  teacherName?: string;
+  // manual mode only: how many period rows the manual grid/view render, default 7
+  periodCount?: number;
+}
+
+export interface ManualTimetableEntry {
+  id?: number;
+  day: number; // 0=월 .. 4=금
+  period: number; // 1-based
+  subject: string;
+  note: string;
+  updatedAt?: string;
 }
 
 export type EntryKind = 'attendance' | 'sticker' | 'note';

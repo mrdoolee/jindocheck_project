@@ -15,6 +15,7 @@ beforeEach(async () => {
     db.attendance.clear(),
     db.stickers.clear(),
     db.records.clear(),
+    db.timetableEntries.clear(),
     db.timetableSettings.clear(),
   ]);
 });
@@ -69,6 +70,30 @@ describe('backup', () => {
     await expect(importData({ ...payload, data: dataWithoutSubjects })).resolves.not.toThrow();
     expect(await db.subjects.toArray()).toHaveLength(0);
     expect(await db.classSubjects.toArray()).toHaveLength(0);
+  });
+
+  it('round-trips manual timetable entries', async () => {
+    await db.timetableEntries.add({ day: 0, period: 1, subject: '국어', note: '3-2' });
+
+    const payload = await exportData();
+    expect(payload.data.timetableEntries).toHaveLength(1);
+
+    await db.timetableEntries.clear();
+    await importData(payload);
+
+    const entries = await db.timetableEntries.toArray();
+    expect(entries).toHaveLength(1);
+    expect(entries[0].subject).toBe('국어');
+  });
+
+  it('imports an older backup that predates manual-timetable support without throwing', async () => {
+    const classId = await createClass('1반');
+    await addStudent(classId, 1, '홍길동');
+    const payload = await exportData();
+    const { timetableEntries: _te, ...dataWithoutTimetableEntries } = payload.data;
+
+    await expect(importData({ ...payload, data: dataWithoutTimetableEntries })).resolves.not.toThrow();
+    expect(await db.timetableEntries.toArray()).toHaveLength(0);
   });
 
   it('round-trips timetableSettings', async () => {

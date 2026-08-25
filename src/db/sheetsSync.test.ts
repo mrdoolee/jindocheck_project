@@ -12,6 +12,7 @@ beforeEach(async () => {
   await db.attendance.clear();
   await db.stickers.clear();
   await db.records.clear();
+  await db.timetableEntries.clear();
   localStorage.clear();
 });
 
@@ -96,6 +97,16 @@ describe('recordsToGrid / gridToRecords round-trip', () => {
     expect(gridToRecords('classSubjects', linkGrid)).toEqual([{ id: 1, classId: 1, subjectId: 1, updatedAt: 't1' }]);
   });
 
+  it('round-trips a manual timetable entry', () => {
+    const grid = recordsToGrid('timetableEntries', [
+      { id: 1, day: 0, period: 1, subject: '국어', note: '3-2', updatedAt: 't1' },
+    ]);
+    expect(grid[0]).toEqual(['id', 'day', 'period', 'subject', 'note', 'updatedAt']);
+    expect(gridToRecords('timetableEntries', grid)).toEqual([
+      { id: 1, day: 0, period: 1, subject: '국어', note: '3-2', updatedAt: 't1' },
+    ]);
+  });
+
   it('throws SheetSchemaError when the header row does not match', () => {
     expect(() => gridToRecords('classes', [['id', 'name']])).toThrow(SheetSchemaError);
   });
@@ -148,6 +159,7 @@ describe('exportToSheet (local -> sheet, full overwrite)', () => {
     expect(pushed[0].tables!.students).toEqual([['id', 'classId', 'number', 'name', 'role', 'seatRow', 'seatCol', 'updatedAt']]);
     expect(pushed[0].tables!.subjects).toEqual([['id', 'name', 'order', 'createdAt', 'updatedAt']]);
     expect(pushed[0].tables!.classSubjects).toEqual([['id', 'classId', 'subjectId', 'updatedAt']]);
+    expect(pushed[0].tables!.timetableEntries).toEqual([['id', 'day', 'period', 'subject', 'note', 'updatedAt']]);
   });
 
   it('does not touch local data', async () => {

@@ -28,6 +28,7 @@ function renderPage() {
 
 beforeEach(async () => {
   await db.timetableSettings.clear();
+  await db.timetableEntries.clear();
   vi.unstubAllGlobals();
 });
 
@@ -91,5 +92,22 @@ describe('TimetablePage', () => {
     await user.click(screen.getByText('조회'));
 
     expect(await screen.findByText('국어')).toBeInTheDocument();
+  });
+
+  it('renders a manually entered timetable without calling the comci API', async () => {
+    await db.timetableSettings.put({ id: 1, mode: 'manual', periodCount: 2 });
+    await db.timetableEntries.add({ day: 0, period: 1, subject: '국어', note: '3-2' });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('should not call comci API in manual mode');
+      })
+    );
+
+    renderPage();
+
+    expect(await screen.findByText('국어')).toBeInTheDocument();
+    expect(screen.getByText('3-2')).toBeInTheDocument();
+    expect(screen.getByText('수정하기')).toBeInTheDocument();
   });
 });
