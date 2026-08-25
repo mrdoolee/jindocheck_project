@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getAccessToken, batchGetValues, batchClearValues, batchUpdateValues } from './_lib/googleSheets.js';
+import { getAccessToken, batchGetValues, batchClearValues, batchUpdateValues, ensureSheetsExist } from './_lib/googleSheets.js';
 import { TABLE_NAMES } from './_lib/tables.js';
 import { requireSession } from './_lib/session.js';
 import { requireGoogleClientCredentials } from './_lib/env.js';
@@ -17,6 +17,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const accessToken = await getAccessToken(record.refreshToken, clientId, clientSecret);
     const spreadsheetId = record.spreadsheetId;
 
+    // Self-heals a spreadsheet created before a table was added to TABLE_NAMES (e.g. an
+    // already-connected teacher's sheet from before subjects/classSubjects existed) —
+    // createSpreadsheet() on first connect and ensureSheetsExist() in select-spreadsheet.ts
+    // only cover a *new* connection/pick, not a sheet someone connected to earlier. Cheap
+    // (one metadata GET, and a no-op batchUpdate when nothing is missing), so it's fine to
+    // run on every GET/POST rather than only on connect.
+    await ensureSheetsExist(spreadsheetId, [...TABLE_NAMES], accessToken);
+
     if (req.method === 'GET') {
       const tables = await batchGetValues(spreadsheetId, [...TABLE_NAMES], accessToken);
       res.status(200).json({ tables });
@@ -30,9 +38,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
       }
       const names = TABLE_NAMES.filter((name) => body.tables![name]);
-      // Tabs are guaranteed to exist here — either from createSpreadsheet() on first
-      // connect, or from ensureSheetsExist() in select-spreadsheet.ts at pick time. No
-      // need to re-check on every export.
       await batchClearValues(spreadsheetId, names, accessToken);
       await batchUpdateValues(
         spreadsheetId,

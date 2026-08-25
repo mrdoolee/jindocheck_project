@@ -5,7 +5,8 @@ import { requireSession, getUserRecord, saveUserRecord } from '../../_lib/sessio
 
 // Repoints this teacher's sync target at a spreadsheet the user picked via Google Picker
 // (instead of the one auto-created on first connect). Immediately ensures the picked
-// spreadsheet has all 7 tabs, so a mismatch surfaces here rather than on the next export.
+// spreadsheet has all of TABLE_NAMES' tabs, so a mismatch surfaces here rather than on the
+// next export (api/sheet.ts also does this on every request as a second line of defense).
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });

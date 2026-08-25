@@ -5,6 +5,8 @@ import { recordsToGrid, gridToRecords, SheetSchemaError, exportToSheet, importFr
 beforeEach(async () => {
   await db.classes.clear();
   await db.students.clear();
+  await db.subjects.clear();
+  await db.classSubjects.clear();
   await db.curriculum.clear();
   await db.progress.clear();
   await db.attendance.clear();
@@ -74,6 +76,26 @@ describe('recordsToGrid / gridToRecords round-trip', () => {
     expect(gridToRecords('classes', [])).toEqual([]);
   });
 
+  it('round-trips a curriculum item including its subjectId', () => {
+    const grid = recordsToGrid('curriculum', [
+      { id: 1, subjectId: 2, order: 0, unit: '1단원', lesson: '1차시', updatedAt: 't1' },
+    ]);
+    expect(grid[0]).toEqual(['id', 'subjectId', 'order', 'unit', 'lesson', 'updatedAt']);
+
+    const records = gridToRecords('curriculum', grid);
+    expect(records).toEqual([{ id: 1, subjectId: 2, order: 0, unit: '1단원', lesson: '1차시', updatedAt: 't1' }]);
+  });
+
+  it('round-trips a subject and a classSubjects link', () => {
+    const subjectGrid = recordsToGrid('subjects', [{ id: 1, name: '수학', order: 0, createdAt: 'c1', updatedAt: 't1' }]);
+    expect(gridToRecords('subjects', subjectGrid)).toEqual([
+      { id: 1, name: '수학', order: 0, createdAt: 'c1', updatedAt: 't1' },
+    ]);
+
+    const linkGrid = recordsToGrid('classSubjects', [{ id: 1, classId: 1, subjectId: 1, updatedAt: 't1' }]);
+    expect(gridToRecords('classSubjects', linkGrid)).toEqual([{ id: 1, classId: 1, subjectId: 1, updatedAt: 't1' }]);
+  });
+
   it('throws SheetSchemaError when the header row does not match', () => {
     expect(() => gridToRecords('classes', [['id', 'name']])).toThrow(SheetSchemaError);
   });
@@ -124,6 +146,8 @@ describe('exportToSheet (local -> sheet, full overwrite)', () => {
     expect(classesGrid.some((row) => row[1] === '푸시테스트')).toBe(true);
     // every table is included even when empty
     expect(pushed[0].tables!.students).toEqual([['id', 'classId', 'number', 'name', 'role', 'seatRow', 'seatCol', 'updatedAt']]);
+    expect(pushed[0].tables!.subjects).toEqual([['id', 'name', 'order', 'createdAt', 'updatedAt']]);
+    expect(pushed[0].tables!.classSubjects).toEqual([['id', 'classId', 'subjectId', 'updatedAt']]);
   });
 
   it('does not touch local data', async () => {

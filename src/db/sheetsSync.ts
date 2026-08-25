@@ -3,6 +3,8 @@ import { exportData, importData, type BackupPayload } from './backup';
 export const TABLE_NAMES = [
   'classes',
   'students',
+  'subjects',
+  'classSubjects',
   'curriculum',
   'progress',
   'attendance',
@@ -45,9 +47,24 @@ const SHEET_SCHEMA: Record<TableName, TableSchema> = {
       updatedAt: 'string',
     },
   },
+  subjects: {
+    columns: ['id', 'name', 'order', 'createdAt', 'updatedAt'],
+    types: { id: 'number', name: 'string', order: 'number', createdAt: 'string', updatedAt: 'string' },
+  },
+  classSubjects: {
+    columns: ['id', 'classId', 'subjectId', 'updatedAt'],
+    types: { id: 'number', classId: 'number', subjectId: 'number', updatedAt: 'string' },
+  },
   curriculum: {
-    columns: ['id', 'order', 'unit', 'lesson', 'updatedAt'],
-    types: { id: 'number', order: 'number', unit: 'string', lesson: 'string', updatedAt: 'string' },
+    columns: ['id', 'subjectId', 'order', 'unit', 'lesson', 'updatedAt'],
+    types: {
+      id: 'number',
+      subjectId: 'number',
+      order: 'number',
+      unit: 'string',
+      lesson: 'string',
+      updatedAt: 'string',
+    },
   },
   progress: {
     columns: ['id', 'classId', 'curriculumItemId', 'done', 'date', 'updatedAt'],
