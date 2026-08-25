@@ -28,7 +28,7 @@ This is a **zero-backend, static single-page app** for teachers to track classro
 
 ### Data layer (`src/db/`)
 
-Plain async functions wrapping a single Dexie (`AppDatabase`) instance in `src/db/db.ts` — no React imports in this directory. Each `*.ts` file owns one concern (`classes.ts`, `students.ts`, `curriculum.ts`, `progress.ts`, `entries.ts`, `backup.ts`, `seatingImport.ts`, `timetableSettings.ts`, plus `sheetsSync.ts` for the Sheets-sync feature — see its own section below) and is unit-tested in fake-indexeddb, not mocked — tests exercise real Dexie behavior.
+Plain async functions wrapping a single Dexie (`AppDatabase`) instance in `src/db/db.ts` — no React imports in this directory. Each `*.ts` file owns one concern (`classes.ts`, `students.ts`, `curriculum.ts`, `progress.ts`, `entries.ts`, `backup.ts`, `timetableSettings.ts`, `manualTimetable.ts`, plus `sheetsSync.ts` for the Sheets-sync feature — see its own section below) and is unit-tested in fake-indexeddb, not mocked — tests exercise real Dexie behavior.
 
 Schema changes go through Dexie's versioning: add a new `this.version(N).stores({...})` block in `db.ts` (only the tables that changed), and an `.upgrade()` callback if existing data needs migrating (see version 2's migration of `classes.order`). Never edit an already-shipped `version()` block.
 

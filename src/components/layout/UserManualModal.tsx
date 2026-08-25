@@ -45,7 +45,7 @@ export default function UserManualModal({ open, onClose }: { open: boolean; onCl
               <li><b>진도체크</b>: 진도 항목 체크리스트, 체크하면 완료일 자동 기록(수정 가능), 과목이 여러 개면 상단 버튼으로 전환</li>
               <li><b>출결확인</b>: 날짜 선택 후 학생별 출결 입력, 이력보기로 지난 기록 조회</li>
               <li><b>누가기록</b>: 학생별 특이사항 기록, 전체/학생별 이력 조회 및 정렬</li>
-              <li><b>자리배치표</b>: 행/열 크기 조정, 드래그로 좌석 배치, 배치도 JSON 불러오기</li>
+              <li><b>자리배치표</b>: 행/열 크기 조정, 드래그로 좌석 배치</li>
             </ul>
           </section>
           <section>

@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { updateSeat } from '../../db/students';
 import { updateSeatingSize } from '../../db/classes';
-import { parseSeatingBackup } from '../../db/seatingImport';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -19,7 +17,6 @@ export default function SeatingTab({ classId }: { classId: number }) {
   const classRecord = useLiveQuery(() => db.classes.get(classId), [classId]);
   const rows = classRecord?.seatRows ?? DEFAULT_ROWS;
   const cols = classRecord?.seatCols ?? DEFAULT_COLS;
-  const fileInput = useRef<HTMLInputElement>(null);
 
   // Local draft state, committed on blur — the inputs used to be bound straight to the DB
   // value with no buffer, so clearing the field to type a new number (e.g. backspace to
@@ -60,52 +57,6 @@ export default function SeatingTab({ classId }: { classId: number }) {
   );
   const unseated = students.filter((s) => s.seatRow === null || s.seatCol === null);
 
-  const handleImportClick = () => fileInput.current?.click();
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const { placements, skipped } = parseSeatingBackup(JSON.parse(text));
-
-      if (
-        !window.confirm(
-          `배치도 파일을 불러오면 현재 자리배치가 모두 지워지고 파일의 배치로 교체됩니다. 계속할까요? (${placements.length}자리)`
-        )
-      ) {
-        e.target.value = '';
-        return;
-      }
-
-      const studentByNumber = new Map(students.map((s) => [s.number, s]));
-      const unmatched: number[] = [];
-
-      await Promise.all(students.map((s) => updateSeat(s.id!, null, null)));
-
-      for (const p of placements) {
-        const student = studentByNumber.get(p.studentNumber);
-        if (!student) {
-          unmatched.push(p.studentNumber);
-          continue;
-        }
-        await updateSeat(student.id!, p.row, p.col);
-      }
-
-      let message = `${placements.length - unmatched.length}명 배치를 불러왔습니다.`;
-      if (unmatched.length > 0) {
-        message += `\n명단에 없는 번호라 건너뜀: ${unmatched.join(', ')}`;
-      }
-      if (skipped.length > 0) {
-        message += `\n무시된 좌석: ${skipped.length}건`;
-      }
-      window.alert(message);
-    } catch (err) {
-      window.alert(`배치도 불러오기 실패: ${(err as Error).message}`);
-    }
-    e.target.value = '';
-  };
-
   return (
     <div className="space-y-4">
       <Card>
@@ -144,17 +95,6 @@ export default function SeatingTab({ classId }: { classId: number }) {
                 className="h-8 w-16"
               />
             </div>
-            <Button variant="outline" size="sm" onClick={handleImportClick}>
-              배치도 불러오기
-            </Button>
-            <input
-              ref={fileInput}
-              type="file"
-              accept="application/json"
-              onChange={handleFileChange}
-              className="hidden"
-              aria-label="배치도 파일 선택"
-            />
           </div>
         </CardHeader>
         <CardContent className="overflow-auto pt-0">
