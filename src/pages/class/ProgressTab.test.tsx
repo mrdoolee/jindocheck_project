@@ -7,9 +7,17 @@ import { addCurriculumItem } from '../../db/curriculum';
 import ProgressTab from './ProgressTab';
 
 beforeEach(async () => {
+  await db.subjects.clear();
+  await db.classSubjects.clear();
   await db.curriculum.clear();
   await db.progress.clear();
 });
+
+async function linkSubject(classId: number, subjectId?: number): Promise<number> {
+  const id = subjectId ?? (await db.subjects.add({ name: '수학', order: 0, createdAt: new Date().toISOString() }));
+  await db.classSubjects.add({ classId, subjectId: id });
+  return id;
+}
 
 function renderProgressTab(classId: number) {
   return render(
@@ -20,8 +28,14 @@ function renderProgressTab(classId: number) {
 }
 
 describe('ProgressTab', () => {
+  it('shows a message when the class has no linked subject', async () => {
+    renderProgressTab(1);
+    expect(await screen.findByText(/연결된 과목이 없습니다/)).toBeInTheDocument();
+  });
+
   it('checks an item and shows today date', async () => {
-    const curriculumId = await addCurriculumItem('1단원', '1차시');
+    const subjectId = await linkSubject(1);
+    const curriculumId = await addCurriculumItem(subjectId, '1단원', '1차시');
     const user = userEvent.setup();
     renderProgressTab(1);
 
@@ -37,7 +51,9 @@ describe('ProgressTab', () => {
   });
 
   it('keeps progress independent between classes', async () => {
-    await addCurriculumItem('1단원', '1차시');
+    const subjectId = await linkSubject(1);
+    await linkSubject(2, subjectId);
+    await addCurriculumItem(subjectId, '1단원', '1차시');
     const user = userEvent.setup();
     const { rerender } = renderProgressTab(1);
     await user.click(await screen.findByRole('checkbox'));
@@ -55,8 +71,23 @@ describe('ProgressTab', () => {
     expect(checkbox).not.toBeChecked();
   });
 
+  it('shows one card per subject when a class has more than one', async () => {
+    const mathId = await linkSubject(1);
+    const englishId = await db.subjects.add({ name: '영어', order: 1, createdAt: new Date().toISOString() });
+    await db.classSubjects.add({ classId: 1, subjectId: englishId });
+    await addCurriculumItem(mathId, '수학 1단원', '1차시');
+    await addCurriculumItem(englishId, '영어 1단원', '1차시');
+
+    renderProgressTab(1);
+
+    expect(await screen.findByText('수학')).toBeInTheDocument();
+    expect(await screen.findByText('영어')).toBeInTheDocument();
+    expect(await screen.findAllByRole('checkbox')).toHaveLength(2);
+  });
+
   it('displays the actual persisted date, not today\'s date', async () => {
-    const curriculumId = await addCurriculumItem('1단원', '1차시');
+    const subjectId = await linkSubject(1);
+    const curriculumId = await addCurriculumItem(subjectId, '1단원', '1차시');
     await db.progress.add({ classId: 1, curriculumItemId: curriculumId, done: true, date: '2026-01-15' });
 
     renderProgressTab(1);
@@ -69,7 +100,8 @@ describe('ProgressTab', () => {
   });
 
   it('allows editing the date to a past date after checking an item', async () => {
-    const curriculumId = await addCurriculumItem('1단원', '1차시');
+    const subjectId = await linkSubject(1);
+    const curriculumId = await addCurriculumItem(subjectId, '1단원', '1차시');
     const user = userEvent.setup();
     renderProgressTab(1);
 
@@ -86,7 +118,8 @@ describe('ProgressTab', () => {
   });
 
   it('clearing the date input does not unmount it', async () => {
-    const curriculumId = await addCurriculumItem('1단원', '1차시');
+    const subjectId = await linkSubject(1);
+    const curriculumId = await addCurriculumItem(subjectId, '1단원', '1차시');
     const user = userEvent.setup();
     renderProgressTab(1);
 

@@ -6,6 +6,10 @@ export interface BackupPayload {
   data: {
     classes: unknown[];
     students: unknown[];
+    // Optional for the same reason as timetableSettings below: older backups (exported
+    // before subject support existed) won't have these keys at all.
+    subjects?: unknown[];
+    classSubjects?: unknown[];
     curriculum: unknown[];
     progress: unknown[];
     attendance: unknown[];
@@ -21,10 +25,12 @@ export interface BackupPayload {
 }
 
 export async function exportData(): Promise<BackupPayload> {
-  const [classes, students, curriculum, progress, attendance, stickers, records, timetableSettings] =
+  const [classes, students, subjects, classSubjects, curriculum, progress, attendance, stickers, records, timetableSettings] =
     await Promise.all([
       db.classes.toArray(),
       db.students.toArray(),
+      db.subjects.toArray(),
+      db.classSubjects.toArray(),
       db.curriculum.toArray(),
       db.progress.toArray(),
       db.attendance.toArray(),
@@ -35,7 +41,7 @@ export async function exportData(): Promise<BackupPayload> {
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
-    data: { classes, students, curriculum, progress, attendance, stickers, records, timetableSettings },
+    data: { classes, students, subjects, classSubjects, curriculum, progress, attendance, stickers, records, timetableSettings },
   };
 }
 
@@ -46,11 +52,24 @@ export async function importData(payload: BackupPayload): Promise<void> {
   const hasTimetableSettings = payload.data.timetableSettings !== undefined;
   await db.transaction(
     'rw',
-    [db.classes, db.students, db.curriculum, db.progress, db.attendance, db.stickers, db.records, db.timetableSettings],
+    [
+      db.classes,
+      db.students,
+      db.subjects,
+      db.classSubjects,
+      db.curriculum,
+      db.progress,
+      db.attendance,
+      db.stickers,
+      db.records,
+      db.timetableSettings,
+    ],
     async () => {
       await Promise.all([
         db.classes.clear(),
         db.students.clear(),
+        db.subjects.clear(),
+        db.classSubjects.clear(),
         db.curriculum.clear(),
         db.progress.clear(),
         db.attendance.clear(),
@@ -61,6 +80,9 @@ export async function importData(payload: BackupPayload): Promise<void> {
       await Promise.all([
         db.classes.bulkAdd(payload.data.classes as never[]),
         db.students.bulkAdd(payload.data.students as never[]),
+        // older backups (from before subject support) won't have these keys at all
+        db.subjects.bulkAdd((payload.data.subjects ?? []) as never[]),
+        db.classSubjects.bulkAdd((payload.data.classSubjects ?? []) as never[]),
         db.curriculum.bulkAdd(payload.data.curriculum as never[]),
         db.progress.bulkAdd(payload.data.progress as never[]),
         db.attendance.bulkAdd(payload.data.attendance as never[]),

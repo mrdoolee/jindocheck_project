@@ -35,10 +35,11 @@ export async function updateSeatingSize(classId: number, rows: number, cols: num
 export async function deleteClass(id: number): Promise<void> {
   await db.transaction(
     'rw',
-    [db.classes, db.students, db.progress, db.attendance, db.stickers, db.records],
+    [db.classes, db.students, db.classSubjects, db.progress, db.attendance, db.stickers, db.records],
     async () => {
       await db.classes.delete(id);
       await db.students.where('classId').equals(id).delete();
+      await db.classSubjects.where('classId').equals(id).delete();
       await db.progress.where('classId').equals(id).delete();
       await db.attendance.where('classId').equals(id).delete();
       await db.stickers.where('classId').equals(id).delete();

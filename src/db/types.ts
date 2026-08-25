@@ -20,8 +20,24 @@ export interface StudentRecord {
   updatedAt?: string;
 }
 
+export interface Subject {
+  id?: number;
+  name: string;
+  order: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ClassSubject {
+  id?: number;
+  classId: number;
+  subjectId: number;
+  updatedAt?: string;
+}
+
 export interface CurriculumItem {
   id?: number;
+  subjectId: number;
   order: number;
   unit: string;
   lesson: string;

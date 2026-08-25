@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { updateSeat } from '../../db/students';
@@ -21,14 +21,36 @@ export default function SeatingTab({ classId }: { classId: number }) {
   const cols = classRecord?.seatCols ?? DEFAULT_COLS;
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const handleRowsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const n = Number(e.target.value);
-    if (Number.isFinite(n) && n >= MIN_SIZE && n <= MAX_SIZE) updateSeatingSize(classId, n, cols);
+  // Local draft state, committed on blur — the inputs used to be bound straight to the DB
+  // value with no buffer, so clearing the field to type a new number (e.g. backspace to
+  // retype "6" as "12") produced an out-of-range/empty intermediate value that immediately
+  // snapped back to the old DB value, making the field look frozen/unresponsive.
+  const [rowsInput, setRowsInput] = useState(String(rows));
+  const [colsInput, setColsInput] = useState(String(cols));
+
+  useEffect(() => setRowsInput(String(rows)), [rows]);
+  useEffect(() => setColsInput(String(cols)), [cols]);
+
+  const commitRows = () => {
+    const n = Number(rowsInput);
+    if (Number.isFinite(n) && n >= MIN_SIZE && n <= MAX_SIZE) {
+      if (n !== rows) updateSeatingSize(classId, n, cols);
+    } else {
+      setRowsInput(String(rows));
+    }
   };
 
-  const handleColsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const n = Number(e.target.value);
-    if (Number.isFinite(n) && n >= MIN_SIZE && n <= MAX_SIZE) updateSeatingSize(classId, rows, n);
+  const commitCols = () => {
+    const n = Number(colsInput);
+    if (Number.isFinite(n) && n >= MIN_SIZE && n <= MAX_SIZE) {
+      if (n !== cols) updateSeatingSize(classId, rows, n);
+    } else {
+      setColsInput(String(cols));
+    }
+  };
+
+  const commitOnEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') e.currentTarget.blur();
   };
 
   const seated = new Map(
@@ -100,8 +122,10 @@ export default function SeatingTab({ classId }: { classId: number }) {
                 aria-label="행 개수"
                 min={MIN_SIZE}
                 max={MAX_SIZE}
-                value={rows}
-                onChange={handleRowsChange}
+                value={rowsInput}
+                onChange={(e) => setRowsInput(e.target.value)}
+                onBlur={commitRows}
+                onKeyDown={commitOnEnter}
                 className="h-8 w-16"
               />
               <Label htmlFor="seat-cols" className="text-xs text-muted-foreground">
@@ -113,8 +137,10 @@ export default function SeatingTab({ classId }: { classId: number }) {
                 aria-label="열 개수"
                 min={MIN_SIZE}
                 max={MAX_SIZE}
-                value={cols}
-                onChange={handleColsChange}
+                value={colsInput}
+                onChange={(e) => setColsInput(e.target.value)}
+                onBlur={commitCols}
+                onKeyDown={commitOnEnter}
                 className="h-8 w-16"
               />
             </div>

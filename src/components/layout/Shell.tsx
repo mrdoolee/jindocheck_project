@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import FooterCreditModal from './FooterCreditModal';
 import { SheetsSyncProvider } from '@/hooks/useSheetsSync';
@@ -20,7 +21,9 @@ export default function Shell({ children }: { children: ReactNode }) {
             >
               ☰
             </button>
-            <span className="text-sm font-semibold">진도 췍</span>
+            <Link to="/" className="text-sm font-semibold hover:underline">
+              진도 췍
+            </Link>
           </header>
           <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
           <footer className="shrink-0 border-t border-border px-3 py-3 text-center text-xs text-muted-foreground">

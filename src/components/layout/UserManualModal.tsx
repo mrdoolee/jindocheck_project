@@ -33,9 +33,10 @@ export default function UserManualModal({ open, onClose }: { open: boolean; onCl
             <h3 className="mb-1 font-semibold">시작 순서</h3>
             <ol className="list-decimal space-y-1 pl-5">
               <li>설정 &gt; 반 관리에서 학급 추가</li>
+              <li>설정 &gt; 과목 관리에서 가르치는 과목 추가 후, 반 관리에서 학급마다 과목 배지를 눌러 연결(2개 이상도 가능)</li>
               <li>설정 &gt; 명단 관리에서 학급 선택 후 번호,이름 형식으로 명단 붙여넣기 (수정·삭제도 이 탭에서)</li>
-              <li>설정 &gt; 진도표 관리에서 공통 진도 항목(단원/차시) 등록</li>
-              <li>왼쪽 메뉴에서 학급을 눌러 진도체크·출결확인·누가기록·자리배치표 탭 이용</li>
+              <li>설정 &gt; 진도표 관리에서 과목을 선택해 그 과목의 진도 항목(단원/차시) 등록</li>
+              <li>왼쪽 메뉴에서 학급을 눌러 진도체크·출결확인·누가기록·자리배치표 탭 이용 (진도체크는 연결된 과목별로 표시)</li>
             </ol>
           </section>
           <section>

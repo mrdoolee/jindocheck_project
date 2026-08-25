@@ -8,6 +8,8 @@ beforeEach(async () => {
   await Promise.all([
     db.classes.clear(),
     db.students.clear(),
+    db.subjects.clear(),
+    db.classSubjects.clear(),
     db.curriculum.clear(),
     db.progress.clear(),
     db.attendance.clear(),
@@ -41,6 +43,34 @@ describe('backup', () => {
     expect(students[0].name).toBe('홍길동');
   });
 
+  it('round-trips subjects and classSubjects', async () => {
+    const classId = await createClass('1반');
+    const subjectId = await db.subjects.add({ name: '수학', order: 0, createdAt: new Date().toISOString() });
+    await db.classSubjects.add({ classId, subjectId });
+
+    const payload = await exportData();
+    expect(payload.data.subjects).toHaveLength(1);
+    expect(payload.data.classSubjects).toHaveLength(1);
+
+    await db.subjects.clear();
+    await db.classSubjects.clear();
+    await importData(payload);
+
+    expect(await db.subjects.toArray()).toHaveLength(1);
+    expect(await db.classSubjects.toArray()).toHaveLength(1);
+  });
+
+  it('imports an older backup that predates subject support without throwing', async () => {
+    const classId = await createClass('1반');
+    await addStudent(classId, 1, '홍길동');
+    const payload = await exportData();
+    const { subjects: _s, classSubjects: _cs, ...dataWithoutSubjects } = payload.data;
+
+    await expect(importData({ ...payload, data: dataWithoutSubjects })).resolves.not.toThrow();
+    expect(await db.subjects.toArray()).toHaveLength(0);
+    expect(await db.classSubjects.toArray()).toHaveLength(0);
+  });
+
   it('round-trips timetableSettings', async () => {
     await db.timetableSettings.put({ id: 1, schoolCode: '39286', teacherIndex: 1, teacherName: '김민수' });
 
@@ -71,7 +101,7 @@ describe('backup', () => {
   it('rejects an unsupported version', async () => {
     await expect(
       importData({ version: 99 as 1, exportedAt: '', data: {
-        classes: [], students: [], curriculum: [], progress: [], attendance: [], stickers: [], records: [],
+        classes: [], students: [], subjects: [], classSubjects: [], curriculum: [], progress: [], attendance: [], stickers: [], records: [],
       } })
     ).rejects.toThrow();
   });

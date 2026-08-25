@@ -6,7 +6,18 @@ describe('AppDatabase', () => {
     await db.open();
     const names = db.tables.map((t) => t.name).sort();
     expect(names).toEqual(
-      ['attendance', 'classes', 'curriculum', 'progress', 'records', 'stickers', 'students', 'timetableSettings'].sort()
+      [
+        'attendance',
+        'classes',
+        'classSubjects',
+        'curriculum',
+        'progress',
+        'records',
+        'stickers',
+        'students',
+        'subjects',
+        'timetableSettings',
+      ].sort()
     );
   });
 });

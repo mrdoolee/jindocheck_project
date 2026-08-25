@@ -5,8 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function ProgressTab({ classId }: { classId: number }) {
-  const curriculum = useLiveQuery(() => db.curriculum.orderBy('order').toArray(), []);
+function SubjectProgress({
+  classId,
+  subjectId,
+  subjectName,
+}: {
+  classId: number;
+  subjectId: number;
+  subjectName: string;
+}) {
+  const curriculum = useLiveQuery(() => db.curriculum.where('subjectId').equals(subjectId).sortBy('order'), [subjectId]);
   const progress = useLiveQuery(() => db.progress.where('classId').equals(classId).toArray(), [classId]);
 
   if (!curriculum || !progress) return null;
@@ -19,7 +27,7 @@ export default function ProgressTab({ classId }: { classId: number }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-base">진도 현황</CardTitle>
+        <CardTitle className="text-base">{subjectName}</CardTitle>
         <span className="text-xs font-medium text-muted-foreground">
           {doneCount}/{total} 완료 ({percent}%)
         </span>
@@ -69,5 +77,32 @@ export default function ProgressTab({ classId }: { classId: number }) {
         </ul>
       </CardContent>
     </Card>
+  );
+}
+
+export default function ProgressTab({ classId }: { classId: number }) {
+  const classSubjects = useLiveQuery(() => db.classSubjects.where('classId').equals(classId).toArray(), [classId]);
+  const subjects = useLiveQuery(() => db.subjects.orderBy('order').toArray(), []);
+
+  if (!classSubjects || !subjects) return null;
+
+  const mySubjects = subjects.filter((s) => classSubjects.some((cs) => cs.subjectId === s.id));
+
+  if (mySubjects.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-4 text-sm text-muted-foreground">
+          이 학급에 연결된 과목이 없습니다. 설정 &gt; 반 관리에서 과목을 연결하세요.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {mySubjects.map((s) => (
+        <SubjectProgress key={s.id} classId={classId} subjectId={s.id!} subjectName={s.name} />
+      ))}
+    </div>
   );
 }

@@ -1,14 +1,14 @@
 import { db } from './db';
 import type { CurriculumItem } from './types';
 
-export async function addCurriculumItem(unit: string, lesson: string): Promise<number> {
-  const last = await db.curriculum.orderBy('order').last();
-  const order = last ? last.order + 1 : 0;
-  return db.curriculum.add({ order, unit, lesson });
+export async function addCurriculumItem(subjectId: number, unit: string, lesson: string): Promise<number> {
+  const items = await db.curriculum.where('subjectId').equals(subjectId).toArray();
+  const order = items.length > 0 ? Math.max(...items.map((item) => item.order)) + 1 : 0;
+  return db.curriculum.add({ subjectId, order, unit, lesson });
 }
 
-export async function listCurriculum(): Promise<CurriculumItem[]> {
-  return db.curriculum.orderBy('order').toArray();
+export async function listCurriculum(subjectId: number): Promise<CurriculumItem[]> {
+  return db.curriculum.where('subjectId').equals(subjectId).sortBy('order');
 }
 
 export async function updateCurriculumItem(

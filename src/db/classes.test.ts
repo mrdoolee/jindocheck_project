@@ -41,10 +41,11 @@ describe('classes CRUD', () => {
     const id = await createClass('1반');
     const studentId = await db.students.add({ classId: id, number: 1, name: '홍길동', seatRow: null, seatCol: null });
     await db.attendance.add({ classId: id, studentId, date: '2026-08-14', status: '출석', note: '' });
-    const curriculumItemId = await db.curriculum.add({ order: 1, unit: 'Unit 1', lesson: 'Lesson 1' });
+    const curriculumItemId = await db.curriculum.add({ subjectId: 1, order: 1, unit: 'Unit 1', lesson: 'Lesson 1' });
     await db.progress.add({ classId: id, curriculumItemId, done: false, date: null });
     await db.stickers.add({ classId: id, studentId, date: '2026-08-14', points: 10, reason: 'Good behavior' });
     await db.records.add({ classId: id, studentId, date: '2026-08-14', type: '특이사항', content: 'Test note' });
+    await db.classSubjects.add({ classId: id, subjectId: 1 });
     await deleteClass(id);
     expect(await listClasses()).toHaveLength(0);
     expect(await db.students.where('classId').equals(id).count()).toBe(0);
@@ -52,5 +53,6 @@ describe('classes CRUD', () => {
     expect(await db.progress.where('classId').equals(id).count()).toBe(0);
     expect(await db.stickers.where('classId').equals(id).count()).toBe(0);
     expect(await db.records.where('classId').equals(id).count()).toBe(0);
+    expect(await db.classSubjects.where('classId').equals(id).count()).toBe(0);
   });
 });

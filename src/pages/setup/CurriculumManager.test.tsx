@@ -5,14 +5,25 @@ import { db } from '../../db/db';
 import { addCurriculumItem } from '../../db/curriculum';
 import CurriculumManager from './CurriculumManager';
 
+let subjectId: number;
+
 beforeEach(async () => {
+  await db.subjects.clear();
   await db.curriculum.clear();
+  subjectId = await db.subjects.add({ name: '수학', order: 0, createdAt: new Date().toISOString() });
 });
+
+async function renderAndSelectSubject() {
+  const user = userEvent.setup();
+  render(<CurriculumManager />);
+  await screen.findByRole('option', { name: '수학' });
+  await user.selectOptions(screen.getByLabelText('대상 과목'), String(subjectId));
+  return user;
+}
 
 describe('CurriculumManager', () => {
   it('adds a curriculum item and shows it in the list', async () => {
-    const user = userEvent.setup();
-    render(<CurriculumManager />);
+    const user = await renderAndSelectSubject();
 
     await user.type(screen.getByLabelText('새 단원'), '1단원 수와 연산');
     await user.type(screen.getByLabelText('새 차시'), '1차시 정수와 유리수');
@@ -23,8 +34,7 @@ describe('CurriculumManager', () => {
   });
 
   it('rejects blank unit or lesson on add', async () => {
-    const user = userEvent.setup();
-    render(<CurriculumManager />);
+    const user = await renderAndSelectSubject();
 
     // Try to add with blank unit
     await user.type(screen.getByLabelText('새 차시'), '1차시 정수와 유리수');
@@ -43,8 +53,7 @@ describe('CurriculumManager', () => {
   });
 
   it('rejects blank or whitespace-only values on inline-edit blur', async () => {
-    const user = userEvent.setup();
-    render(<CurriculumManager />);
+    const user = await renderAndSelectSubject();
 
     // Add an initial item
     await user.type(screen.getByLabelText('새 단원'), '1단원 수와 연산');
@@ -73,10 +82,10 @@ describe('CurriculumManager', () => {
   });
 
   it('reorders curriculum items via drag and drop', async () => {
-    await addCurriculumItem('A단원', 'A차시');
-    await addCurriculumItem('B단원', 'B차시');
+    await addCurriculumItem(subjectId, 'A단원', 'A차시');
+    await addCurriculumItem(subjectId, 'B단원', 'B차시');
 
-    render(<CurriculumManager />);
+    await renderAndSelectSubject();
     await screen.findByDisplayValue('A단원');
 
     const items = screen.getAllByRole('listitem');
@@ -100,5 +109,16 @@ describe('CurriculumManager', () => {
       const ordered = await db.curriculum.orderBy('order').toArray();
       expect(ordered.map((i) => i.unit)).toEqual(['B단원', 'A단원']);
     });
+  });
+
+  it('scopes the item list to the selected subject only', async () => {
+    const otherSubjectId = await db.subjects.add({ name: '영어', order: 1, createdAt: new Date().toISOString() });
+    await addCurriculumItem(subjectId, '수학 1단원', '1차시');
+    await addCurriculumItem(otherSubjectId, '영어 1단원', '1차시');
+
+    await renderAndSelectSubject();
+
+    expect(await screen.findByDisplayValue('수학 1단원')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('영어 1단원')).not.toBeInTheDocument();
   });
 });

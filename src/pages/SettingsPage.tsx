@@ -1,6 +1,7 @@
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import ClassesPage from './setup/ClassesPage';
+import SubjectsPage from './setup/SubjectsPage';
 import CurriculumPage from './setup/CurriculumPage';
 import RosterPage from './setup/RosterPage';
 import BackupPage from './setup/BackupPage';
@@ -9,6 +10,7 @@ import TimetableSettingsPage from './setup/TimetableSettingsPage';
 
 const TABS = [
   { to: 'classes', label: '반 관리' },
+  { to: 'subjects', label: '과목 관리' },
   { to: 'curriculum', label: '진도표 관리' },
   { to: 'roster', label: '명단 관리' },
   { to: 'timetable', label: '시간표 설정' },
@@ -44,6 +46,7 @@ export default function SettingsPage() {
       <Routes>
         <Route path="/" element={<Navigate to="classes" replace />} />
         <Route path="classes" element={<ClassesPage />} />
+        <Route path="subjects" element={<SubjectsPage />} />
         <Route path="curriculum" element={<CurriculumPage />} />
         <Route path="roster" element={<RosterPage />} />
         <Route path="backup" element={<BackupPage />} />

@@ -139,6 +139,7 @@ describe('SeatingTab', () => {
     await screen.findByLabelText('좌석-0-0');
 
     fireEvent.change(screen.getByLabelText('행 개수'), { target: { value: '3' } });
+    fireEvent.blur(screen.getByLabelText('행 개수'));
 
     await waitFor(async () => {
       const cls = await db.classes.get(1);
@@ -148,6 +149,20 @@ describe('SeatingTab', () => {
     expect(screen.getByLabelText('좌석-2-0')).toBeInTheDocument();
   });
 
+  it('lets the rows field be cleared while typing instead of snapping back immediately', async () => {
+    await db.classes.add({ id: 1, name: '1', createdAt: new Date().toISOString(), order: 0 });
+    render(<SeatingTab classId={1} />);
+    await screen.findByLabelText('좌석-0-0');
+
+    fireEvent.change(screen.getByLabelText('행 개수'), { target: { value: '' } });
+    expect(screen.getByLabelText('행 개수')).toHaveValue(null);
+
+    fireEvent.blur(screen.getByLabelText('행 개수'));
+    expect(screen.getByLabelText('행 개수')).toHaveValue(6);
+    const cls = await db.classes.get(1);
+    expect(cls?.seatRows).toBeUndefined();
+  });
+
   it('unseats students who fall outside a shrunk grid', async () => {
     await db.classes.add({ id: 1, name: '1', createdAt: new Date().toISOString(), order: 0 });
     const studentId = await db.students.add({ classId: 1, number: 1, name: '학생A', seatRow: 5, seatCol: 5 });
@@ -155,6 +170,7 @@ describe('SeatingTab', () => {
     await screen.findByText('학생A');
 
     fireEvent.change(screen.getByLabelText('열 개수'), { target: { value: '2' } });
+    fireEvent.blur(screen.getByLabelText('열 개수'));
 
     await waitFor(async () => {
       const student = await db.students.get(studentId);
