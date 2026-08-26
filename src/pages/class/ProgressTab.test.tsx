@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
@@ -160,5 +160,49 @@ describe('ProgressTab', () => {
       // Value should not have changed to empty
       expect((screen.getByLabelText(`날짜-${curriculumId}`) as HTMLInputElement).value).toBe(originalValue);
     });
+  });
+
+  it('scrolls to the most recently checked item on load, not the top of a long list', async () => {
+    const subjectId = await linkSubject(1);
+    const id1 = await addCurriculumItem(subjectId, '1단원', '1차시');
+    const id2 = await addCurriculumItem(subjectId, '2단원', '2차시');
+    await addCurriculumItem(subjectId, '3단원', '3차시'); // left unchecked
+    await db.progress.add({
+      classId: 1,
+      curriculumItemId: id1,
+      done: true,
+      date: '2026-01-01',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    await db.progress.add({
+      classId: 1,
+      curriculumItemId: id2,
+      done: true,
+      date: '2026-01-02',
+      updatedAt: '2026-01-02T00:00:00.000Z', // checked later than id1
+    });
+
+    const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView');
+    renderProgressTab(1);
+    await screen.findByText('3단원');
+
+    await waitFor(() => {
+      expect(scrollSpy).toHaveBeenCalled();
+    });
+    const target = scrollSpy.mock.instances[0] as HTMLElement;
+    expect(target.id).toBe(`progress-item-${id2}`);
+    scrollSpy.mockRestore();
+  });
+
+  it('does not scroll when nothing has been checked yet', async () => {
+    const subjectId = await linkSubject(1);
+    await addCurriculumItem(subjectId, '1단원', '1차시');
+
+    const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView');
+    renderProgressTab(1);
+    await screen.findByText('1단원');
+
+    expect(scrollSpy).not.toHaveBeenCalled();
+    scrollSpy.mockRestore();
   });
 });

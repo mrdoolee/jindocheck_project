@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { setProgress } from '../../db/progress';
@@ -18,6 +18,22 @@ function SubjectProgress({
 }) {
   const curriculum = useLiveQuery(() => db.curriculum.where('subjectId').equals(subjectId).sortBy('order'), [subjectId]);
   const progress = useLiveQuery(() => db.progress.where('classId').equals(classId).toArray(), [classId]);
+  const hasScrolledRef = useRef(false);
+
+  // Jump straight to the most recently checked item once, on first load — a class 40 lessons
+  // in shouldn't force scrolling past 39 already-completed rows every time the tab opens.
+  // hasScrolledRef gates this to a single run per mount (SubjectProgress remounts — a fresh
+  // ref — on every subject switch and every re-visit to this tab, so it re-runs each time,
+  // but never re-fires mid-visit as the teacher keeps checking items live).
+  useEffect(() => {
+    if (hasScrolledRef.current || !curriculum || !progress) return;
+    hasScrolledRef.current = true;
+    const itemIds = new Set(curriculum.map((item) => item.id));
+    const doneRecords = progress.filter((p) => p.done && itemIds.has(p.curriculumItemId));
+    if (doneRecords.length === 0) return;
+    const latest = doneRecords.reduce((a, b) => ((b.updatedAt ?? '') > (a.updatedAt ?? '') ? b : a));
+    document.getElementById(`progress-item-${latest.curriculumItemId}`)?.scrollIntoView({ block: 'start' });
+  }, [curriculum, progress]);
 
   if (!curriculum || !progress) return null;
 
@@ -39,7 +55,7 @@ function SubjectProgress({
           {curriculum.map((item) => {
             const p = progressByItem.get(item.id!);
             return (
-              <li key={item.id} className="flex items-center gap-3 px-4 py-3">
+              <li key={item.id} id={`progress-item-${item.id}`} className="flex items-center gap-3 px-4 py-3">
                 <input
                   type="checkbox"
                   checked={p?.done ?? false}

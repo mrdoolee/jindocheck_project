@@ -33,6 +33,13 @@ if (!window.matchMedia) {
   })) as typeof window.matchMedia;
 }
 
+// jsdom doesn't implement scrollIntoView — ProgressTab.tsx uses it to jump to the most
+// recently checked item on load. Stub it as a no-op; tests that care which element it was
+// called on spy on it themselves (vi.spyOn keeps this stub as the fallback implementation).
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 afterEach(() => {
   cleanup();
 });
