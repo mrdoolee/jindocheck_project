@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
-import { updateSeat } from '../../db/students';
+import { updateSeat, clearSeating } from '../../db/students';
 import { updateSeatingSize } from '../../db/classes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -95,6 +96,19 @@ export default function SeatingTab({ classId }: { classId: number }) {
                 className="h-8 w-16"
               />
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={seated.size === 0}
+              onClick={() => {
+                if (window.confirm('모든 학생의 자리 배치를 초기화할까요?')) {
+                  clearSeating(classId);
+                }
+              }}
+            >
+              초기화
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="overflow-auto pt-0">

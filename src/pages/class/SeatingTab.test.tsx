@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { db } from '../../db/db';
@@ -105,6 +105,46 @@ describe('SeatingTab', () => {
     expect(screen.getByLabelText('행 개수')).toHaveValue(6);
     const cls = await db.classes.get(1);
     expect(cls?.seatRows).toBeUndefined();
+  });
+
+  it('clears all seats via the 초기화 button after confirmation', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const studentAId = await db.students.add({ classId: 1, number: 1, name: '학생A', seatRow: 0, seatCol: 0 });
+    const studentBId = await db.students.add({ classId: 1, number: 2, name: '학생B', seatRow: 1, seatCol: 1 });
+    const user = userEvent.setup();
+    render(<SeatingTab classId={1} />);
+
+    await screen.findByText('학생A');
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+
+    expect(confirmSpy).toHaveBeenCalled();
+    await waitFor(async () => {
+      const a = await db.students.get(studentAId);
+      const b = await db.students.get(studentBId);
+      expect(a?.seatRow).toBeNull();
+      expect(b?.seatRow).toBeNull();
+    });
+    confirmSpy.mockRestore();
+  });
+
+  it('does not clear seats when the confirmation is dismissed', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const studentId = await db.students.add({ classId: 1, number: 1, name: '학생A', seatRow: 0, seatCol: 0 });
+    const user = userEvent.setup();
+    render(<SeatingTab classId={1} />);
+
+    await screen.findByText('학생A');
+    await user.click(screen.getByRole('button', { name: '초기화' }));
+
+    const student = await db.students.get(studentId);
+    expect(student?.seatRow).toBe(0);
+    confirmSpy.mockRestore();
+  });
+
+  it('disables the 초기화 button when no students are seated', async () => {
+    render(<SeatingTab classId={1} />);
+    await screen.findByLabelText('좌석-0-0');
+    expect(screen.getByRole('button', { name: '초기화' })).toBeDisabled();
   });
 
   it('unseats students who fall outside a shrunk grid', async () => {

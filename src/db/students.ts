@@ -43,3 +43,10 @@ export async function deleteStudent(id: number): Promise<void> {
 export async function updateSeat(id: number, seatRow: number | null, seatCol: number | null): Promise<void> {
   await db.students.update(id, { seatRow, seatCol });
 }
+
+export async function clearSeating(classId: number): Promise<void> {
+  const students = await db.students.where('classId').equals(classId).toArray();
+  await db.transaction('rw', db.students, async () => {
+    await Promise.all(students.map((s) => db.students.update(s.id!, { seatRow: null, seatCol: null })));
+  });
+}
