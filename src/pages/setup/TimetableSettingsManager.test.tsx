@@ -106,6 +106,26 @@ describe('TimetableSettingsManager', () => {
     });
   });
 
+  it('saves both subject and note when editing them in sequence, without either reverting the other', async () => {
+    const user = userEvent.setup();
+    render(<TimetableSettingsManager />);
+    await user.click(screen.getByText('직접 입력'));
+
+    const subjectInput = await screen.findByLabelText('월요일 1교시 과목');
+    await user.type(subjectInput, '국어');
+    const noteInput = screen.getByLabelText('월요일 1교시 비고');
+    await user.click(noteInput);
+    await user.type(noteInput, '3-2');
+    await user.tab();
+
+    await waitFor(async () => {
+      const entries = await db.timetableEntries.toArray();
+      expect(entries).toEqual([
+        expect.objectContaining({ day: 0, period: 1, subject: '국어', note: '3-2' }),
+      ]);
+    });
+  });
+
   it('changes the number of period rows rendered when 교시 수 is edited', async () => {
     const user = userEvent.setup();
     render(<TimetableSettingsManager />);

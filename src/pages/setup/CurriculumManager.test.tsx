@@ -121,4 +121,17 @@ describe('CurriculumManager', () => {
     expect(await screen.findByDisplayValue('수학 1단원')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('영어 1단원')).not.toBeInTheDocument();
   });
+
+  it('falls back to "선택 안 함" when the selected subject is deleted elsewhere', async () => {
+    await addCurriculumItem(subjectId, '1단원', '1차시');
+    await renderAndSelectSubject();
+    await screen.findByText('진도 항목 추가');
+
+    await db.subjects.delete(subjectId);
+
+    await waitFor(() => {
+      expect(screen.queryByText('진도 항목 추가')).not.toBeInTheDocument();
+    });
+    expect(screen.getByLabelText('대상 과목')).toHaveValue('');
+  });
 });

@@ -4,6 +4,9 @@ import { addStudent, listStudents, updateStudent, deleteStudent, updateSeat } fr
 
 beforeEach(async () => {
   await db.students.clear();
+  await db.attendance.clear();
+  await db.stickers.clear();
+  await db.records.clear();
 });
 
 describe('students CRUD', () => {
@@ -25,6 +28,19 @@ describe('students CRUD', () => {
     const id = await addStudent(1, 1, '홍길동');
     await deleteStudent(id);
     expect(await listStudents(1)).toHaveLength(0);
+  });
+
+  it('deletes the student\'s attendance, stickers, and records too, not just the roster row', async () => {
+    const id = await addStudent(1, 1, '홍길동');
+    await db.attendance.add({ classId: 1, studentId: id, date: '2026-01-01', status: '출석', note: '' });
+    await db.stickers.add({ classId: 1, studentId: id, date: '2026-01-01', points: 1, reason: '' });
+    await db.records.add({ classId: 1, studentId: id, date: '2026-01-01', type: '기타', content: '' });
+
+    await deleteStudent(id);
+
+    expect(await db.attendance.where('studentId').equals(id).count()).toBe(0);
+    expect(await db.stickers.where('studentId').equals(id).count()).toBe(0);
+    expect(await db.records.where('studentId').equals(id).count()).toBe(0);
   });
 
   it('updates a student seat position', async () => {

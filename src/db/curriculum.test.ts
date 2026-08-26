@@ -6,6 +6,7 @@ const SUBJECT_ID = 1;
 
 beforeEach(async () => {
   await db.curriculum.clear();
+  await db.progress.clear();
 });
 
 describe('curriculum CRUD', () => {
@@ -27,6 +28,16 @@ describe('curriculum CRUD', () => {
     const id = await addCurriculumItem(SUBJECT_ID, '1단원', '1차시');
     await deleteCurriculumItem(id);
     expect(await listCurriculum(SUBJECT_ID)).toHaveLength(0);
+  });
+
+  it('deletes progress rows referencing the item, not just the item itself', async () => {
+    const id = await addCurriculumItem(SUBJECT_ID, '1단원', '1차시');
+    await db.progress.add({ classId: 1, curriculumItemId: id, done: true, date: '2026-01-01' });
+    await db.progress.add({ classId: 2, curriculumItemId: id, done: true, date: '2026-01-01' });
+
+    await deleteCurriculumItem(id);
+
+    expect(await db.progress.where('curriculumItemId').equals(id).count()).toBe(0);
   });
 
   it('preserves insertion order after deleting non-tail items', async () => {

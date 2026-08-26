@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/db/db';
 import { getTimetableSettings, saveTimetableSettings } from '@/db/timetableSettings';
-import { setManualTimetableCell } from '@/db/manualTimetable';
+import { setManualTimetableField } from '@/db/manualTimetable';
 import type { TimetableMode, TimetableSettings } from '@/db/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -203,7 +203,7 @@ function ManualTimetableEditor({ settings }: { settings: TimetableSettings | und
                           aria-label={`${dayLabel}요일 ${period}교시 과목`}
                           placeholder="과목"
                           className="h-7 text-xs"
-                          onBlur={(e) => setManualTimetableCell(day, period, e.target.value, entry?.note ?? '')}
+                          onBlur={(e) => setManualTimetableField(day, period, 'subject', e.target.value)}
                         />
                         <Input
                           key={`note-${day}-${period}-${entry?.note ?? ''}`}
@@ -211,7 +211,7 @@ function ManualTimetableEditor({ settings }: { settings: TimetableSettings | und
                           aria-label={`${dayLabel}요일 ${period}교시 비고`}
                           placeholder="비고"
                           className="mt-1 h-6 text-xs text-muted-foreground"
-                          onBlur={(e) => setManualTimetableCell(day, period, entry?.subject ?? '', e.target.value)}
+                          onBlur={(e) => setManualTimetableField(day, period, 'note', e.target.value)}
                         />
                       </td>
                     );

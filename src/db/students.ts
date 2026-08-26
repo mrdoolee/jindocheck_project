@@ -32,7 +32,12 @@ export async function updateStudent(
 }
 
 export async function deleteStudent(id: number): Promise<void> {
-  await db.students.delete(id);
+  await db.transaction('rw', db.students, db.attendance, db.stickers, db.records, async () => {
+    await db.students.delete(id);
+    await db.attendance.where('studentId').equals(id).delete();
+    await db.stickers.where('studentId').equals(id).delete();
+    await db.records.where('studentId').equals(id).delete();
+  });
 }
 
 export async function updateSeat(id: number, seatRow: number | null, seatCol: number | null): Promise<void> {

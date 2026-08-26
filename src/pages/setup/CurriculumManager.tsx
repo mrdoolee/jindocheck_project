@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import { addCurriculumItem, updateCurriculumItem, deleteCurriculumItem, reorderCurriculumItems } from '../../db/curriculum';
@@ -10,8 +10,18 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function CurriculumManager() {
-  const subjects = useLiveQuery(() => db.subjects.orderBy('order').toArray(), []) ?? [];
+  const subjectsResult = useLiveQuery(() => db.subjects.orderBy('order').toArray(), []);
+  const subjects = subjectsResult ?? [];
   const [subjectId, setSubjectId] = useState<number | ''>('');
+
+  // The selected subject can be deleted out from under this picker (e.g. from 과목 관리 in
+  // another tab) — fall back to "선택 안 함" instead of silently keeping the curriculum editor
+  // open against a subjectId that no longer exists in db.subjects.
+  useEffect(() => {
+    if (subjectId !== '' && subjectsResult && !subjectsResult.some((s) => s.id === subjectId)) {
+      setSubjectId('');
+    }
+  }, [subjectId, subjectsResult]);
   const items =
     useLiveQuery(
       () =>

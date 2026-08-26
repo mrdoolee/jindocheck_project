@@ -12,6 +12,11 @@ import {
 const REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
   const sessionId = getCookie(req, SESSION_COOKIE_NAME);
   if (!sessionId) {
     res.status(200).json({ ok: true });

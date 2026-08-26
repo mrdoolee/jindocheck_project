@@ -2,6 +2,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCookie, clearCookie, deleteSession, SESSION_COOKIE_NAME } from '../_lib/session.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
   const sessionId = getCookie(req, SESSION_COOKIE_NAME);
   if (sessionId) await deleteSession(sessionId);
   clearCookie(res, SESSION_COOKIE_NAME);

@@ -19,7 +19,10 @@ export async function updateCurriculumItem(
 }
 
 export async function deleteCurriculumItem(id: number): Promise<void> {
-  await db.curriculum.delete(id);
+  await db.transaction('rw', db.curriculum, db.progress, async () => {
+    await db.curriculum.delete(id);
+    await db.progress.where('curriculumItemId').equals(id).delete();
+  });
 }
 
 export async function reorderCurriculumItems(orderedIds: number[]): Promise<void> {

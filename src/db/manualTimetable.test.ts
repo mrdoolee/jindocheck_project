@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { db } from './db';
-import { listManualTimetable, setManualTimetableCell } from './manualTimetable';
+import { listManualTimetable, setManualTimetableCell, setManualTimetableField } from './manualTimetable';
 
 beforeEach(async () => {
   await db.timetableEntries.clear();
@@ -42,5 +42,41 @@ describe('manualTimetable', () => {
     await setManualTimetableCell(1, 1, '영어', '');
     const entries = await listManualTimetable();
     expect(entries).toHaveLength(3);
+  });
+});
+
+describe('setManualTimetableField', () => {
+  it('creates a row with only the given field set when the cell is empty', async () => {
+    await setManualTimetableField(0, 1, 'subject', '국어');
+    const [entry] = await listManualTimetable();
+    expect(entry.subject).toBe('국어');
+    expect(entry.note).toBe('');
+  });
+
+  it('does nothing when setting an empty value on an already-empty cell', async () => {
+    await setManualTimetableField(0, 1, 'subject', '');
+    expect(await listManualTimetable()).toHaveLength(0);
+  });
+
+  it('committing one field does not clobber the other field with a stale value', async () => {
+    // Simulates the real bug: subject commits first, then note commits — note's onBlur must
+    // not overwrite subject with whatever it thought subject was before that first commit.
+    await setManualTimetableField(0, 1, 'subject', '국어');
+    await setManualTimetableField(0, 1, 'note', '3-2');
+
+    const [entry] = await listManualTimetable();
+    expect(entry.subject).toBe('국어');
+    expect(entry.note).toBe('3-2');
+  });
+
+  it('deletes the row once both fields have been cleared via independent field commits', async () => {
+    await setManualTimetableField(0, 1, 'subject', '국어');
+    await setManualTimetableField(0, 1, 'note', '3-2');
+
+    await setManualTimetableField(0, 1, 'subject', '');
+    expect(await listManualTimetable()).toHaveLength(1); // note still set, row survives
+
+    await setManualTimetableField(0, 1, 'note', '');
+    expect(await listManualTimetable()).toHaveLength(0);
   });
 });

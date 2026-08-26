@@ -189,7 +189,7 @@ describe('ProgressTab', () => {
     await waitFor(() => {
       expect(scrollSpy).toHaveBeenCalled();
     });
-    const target = scrollSpy.mock.instances[0] as HTMLElement;
+    const target = scrollSpy.mock.instances[0] as unknown as HTMLElement;
     expect(target.id).toBe(`progress-item-${id2}`);
     scrollSpy.mockRestore();
   });

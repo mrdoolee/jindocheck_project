@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
 import RosterImport from './RosterImport';
@@ -7,8 +7,18 @@ import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 
 export default function RosterManager() {
-  const classes = useLiveQuery(() => db.classes.orderBy('name').toArray(), []) ?? [];
+  const classesResult = useLiveQuery(() => db.classes.orderBy('name').toArray(), []);
+  const classes = classesResult ?? [];
   const [classId, setClassId] = useState<number | ''>('');
+
+  // The selected class can be deleted out from under this picker (e.g. from 반 관리 in another
+  // tab) — fall back to "선택 안 함" instead of leaving RosterImport/RosterList pointed at a
+  // classId that no longer exists in db.classes.
+  useEffect(() => {
+    if (classId !== '' && classesResult && !classesResult.some((c) => c.id === classId)) {
+      setClassId('');
+    }
+  }, [classId, classesResult]);
 
   return (
     <div className="space-y-4">
