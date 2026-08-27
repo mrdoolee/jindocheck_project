@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { listStudents, updateStudent, deleteStudent, reorderStudents, resetStudentOrder } from '../../db/students';
+import { listStudents, updateStudent, deleteStudent, reorderStudents, clearRoster } from '../../db/students';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,8 +14,6 @@ export default function RosterList({ classId }: { classId: number | '' }) {
       </Card>
     );
   }
-
-  const isDefaultOrder = students.every((s) => s.order === s.number);
 
   const handleDrop = (e: React.DragEvent, targetId: number) => {
     const draggingId = Number(e.dataTransfer.getData('text/plain'));
@@ -37,9 +35,13 @@ export default function RosterList({ classId }: { classId: number | '' }) {
           <Button
             variant="outline"
             size="sm"
-            className="shrink-0"
-            onClick={() => resetStudentOrder(classId)}
-            disabled={students.length === 0 || isDefaultOrder}
+            className="shrink-0 text-destructive hover:bg-destructive/10"
+            onClick={() => {
+              if (window.confirm(`${students.length}명의 학생 명단을 모두 삭제할까요? 출결/기록도 함께 삭제되며 되돌릴 수 없습니다.`)) {
+                clearRoster(classId);
+              }
+            }}
+            disabled={students.length === 0}
           >
             초기화
           </Button>

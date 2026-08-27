@@ -156,40 +156,45 @@ describe('RosterList', () => {
     });
   });
 
-  it('disables 초기화 when the order already matches number order', async () => {
+  it('disables 초기화 when there are no students', async () => {
     const classId = await createClass('1반');
-    await addStudent(classId, 1, '홍길동');
-    await addStudent(classId, 2, '김철수');
-
     render(<RosterList classId={classId} />);
 
-    await screen.findByDisplayValue('홍길동');
+    await screen.findByText('등록된 학생이 없습니다.');
     expect(screen.getByText('초기화')).toBeDisabled();
   });
 
-  it('resets the custom order back to number order', async () => {
+  it('clears the whole roster via 초기화 after confirmation', async () => {
     const classId = await createClass('1반');
-    await addStudent(classId, 1, '홍길동');
+    const studentId = await addStudent(classId, 1, '홍길동');
     await addStudent(classId, 2, '김철수');
-    const students = await db.students.toArray();
-    const kim = students.find((s) => s.name === '김철수')!;
-    const hong = students.find((s) => s.name === '홍길동')!;
-    // Simulate a prior drag reorder that put 김철수 (number 2) ahead of 홍길동 (number 1).
-    await db.students.update(kim.id!, { order: 0 });
-    await db.students.update(hong.id!, { order: 1 });
+    await db.attendance.add({ classId, studentId, date: '2026-01-01', status: '출석', note: '' });
 
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
     render(<RosterList classId={classId} />);
 
-    await screen.findByDisplayValue('김철수');
-    const itemsBefore = screen.getAllByRole('listitem');
-    expect(within(itemsBefore[0]).getByDisplayValue('김철수')).toBeInTheDocument();
-
+    await screen.findByDisplayValue('홍길동');
     await user.click(screen.getByText('초기화'));
+    confirmSpy.mockRestore();
 
-    await waitFor(async () => {
-      const ordered = await db.students.where('classId').equals(classId).sortBy('order');
-      expect(ordered.map((s) => s.name)).toEqual(['홍길동', '김철수']);
-    });
+    expect(await screen.findByText('등록된 학생이 없습니다.')).toBeInTheDocument();
+    expect(await db.students.where('classId').equals(classId).count()).toBe(0);
+    expect(await db.attendance.where('studentId').equals(studentId).count()).toBe(0);
+  });
+
+  it('does not clear the roster when the confirmation is dismissed', async () => {
+    const classId = await createClass('1반');
+    await addStudent(classId, 1, '홍길동');
+
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const user = userEvent.setup();
+    render(<RosterList classId={classId} />);
+
+    await screen.findByDisplayValue('홍길동');
+    await user.click(screen.getByText('초기화'));
+    confirmSpy.mockRestore();
+
+    expect(await db.students.where('classId').equals(classId).count()).toBe(1);
   });
 });

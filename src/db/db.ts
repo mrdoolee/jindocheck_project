@@ -71,7 +71,7 @@ export class AppDatabase extends Dexie {
       })
       .upgrade(async (tx) => {
         // Default order = number, so the roster keeps showing in number order until a
-        // teacher explicitly drags to customize it — see students.ts#addStudent/resetStudentOrder.
+        // teacher explicitly drags to customize it — see students.ts#addStudent.
         const students = await tx.table('students').toArray();
         await Promise.all(students.map((s) => tx.table('students').update(s.id, { order: s.number })));
       });
