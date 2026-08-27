@@ -15,6 +15,8 @@ export default function RosterList({ classId }: { classId: number | '' }) {
     );
   }
 
+  const isDefaultOrder = students.every((s) => s.order === s.number);
+
   const handleDrop = (e: React.DragEvent, targetId: number) => {
     const draggingId = Number(e.dataTransfer.getData('text/plain'));
     if (!draggingId || draggingId === targetId) return;
@@ -37,7 +39,7 @@ export default function RosterList({ classId }: { classId: number | '' }) {
             size="sm"
             className="shrink-0"
             onClick={() => resetStudentOrder(classId)}
-            disabled={students.length === 0}
+            disabled={students.length === 0 || isDefaultOrder}
           >
             초기화
           </Button>

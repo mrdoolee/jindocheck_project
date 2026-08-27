@@ -156,6 +156,17 @@ describe('RosterList', () => {
     });
   });
 
+  it('disables 초기화 when the order already matches number order', async () => {
+    const classId = await createClass('1반');
+    await addStudent(classId, 1, '홍길동');
+    await addStudent(classId, 2, '김철수');
+
+    render(<RosterList classId={classId} />);
+
+    await screen.findByDisplayValue('홍길동');
+    expect(screen.getByText('초기화')).toBeDisabled();
+  });
+
   it('resets the custom order back to number order', async () => {
     const classId = await createClass('1반');
     await addStudent(classId, 1, '홍길동');
