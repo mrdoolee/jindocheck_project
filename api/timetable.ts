@@ -54,6 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(502).json({ error: err.message });
       return;
     }
-    res.status(502).json({ error: (err as Error).message });
+    console.error('timetable: unexpected error', err);
+    res.status(502).json({ error: '컴시간 시간표를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
   }
 }
